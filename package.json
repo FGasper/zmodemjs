@@ -1,0 +1,35 @@
+{
+  "name": "zmodem.js",
+  "version": "0.1.0",
+  "description": "ZMODEM file transfers in JavaScript",
+  "main": "zmodem.js",
+  "devDependencies": {
+    "tape": "*"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "tape ./tests/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FGasper/zmodemjs.git"
+  },
+  "keywords": [
+    "zmodem",
+    "shell",
+    "terminal",
+    "file",
+    "transfer",
+    "websocket",
+    "xmodem",
+    "ymodem"
+  ],
+  "author": "Gasper Software Consulting, LLC (http://gaspersoftware.com)",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/FGasper/zmodemjs/issues"
+  },
+  "homepage": "https://github.com/FGasper/zmodemjs#readme"
+}
