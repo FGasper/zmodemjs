@@ -127,7 +127,7 @@ implementation of ZMODEM to allow file transfers in this context.
 
 # PROTOCOL NOTES AND ASSUMPTIONS
 
-ZMODEM solved many more problems than are relevant today; for example,
+ZMODEM solved more problems than are relevant today; for example,
 its provision for remote command execution—besides being a security
 problem—probably wouldn’t work in browsers. (Maybe in Node.js?)
 
