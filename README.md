@@ -1,5 +1,7 @@
 # zmodem.js - ZMODEM for JavaScript
 
+[![build status](https://api.travis-ci.org/FGasper/zmodemjs.svg?branch=master)](http://travis-ci.org/FGasper/zmodemjs)
+
 # SYNOPSIS
 
     let zmsentry = new Zmodem.Sentry();
