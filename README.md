@@ -163,9 +163,17 @@ to dispense with it, so we might as well do the simpler variant.
 
 * There is no XMODEM/YMODEM fallback.
 
-# OTHER NOTES
+# IMPLEMENTATION NOTES
 
-It is a generally-unavoidable byproduct of how ZMODEM works that
+* I’ve had success integrating zmodem.js with
+[xterm.js](https://xtermjs.org).
+
+* ZMODEM is a _binary_ protocol. (There was an extension planned
+to escape everything down to 7-bit ASCII, but it doesn’t seem to have
+been implemented?) Hence, if you’re using WebSocket, you’ll need to
+send and receive binary messages, not text.
+
+* It is a generally-unavoidable byproduct of how ZMODEM works that
 the first header in a ZMODEM session will echo to the terminal. This
 explains the unsightly `**B0000…` stuff that you’ll see when you run
 either `rz` or `sz`.
