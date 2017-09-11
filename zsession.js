@@ -189,6 +189,8 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         this._last_header_name = new_header_and_crc[0].NAME;
         this._last_header_crc = new_header_and_crc[1];
 
+        //console.log("RECEIVED HEADER", new_header_and_crc[0]);
+
         return new_header_and_crc[0];
     }
 
@@ -1054,7 +1056,8 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         var ret = new Promise( function(res, rej) {
             sess._next_header_handler = {
                 ZFIN: function() {
-                    sess._sender( [ 79, 79 ] ); //"OO"
+                    sess._sender( OVER_AND_OUT );
+                    sess._sent_OO = true;
                     res();
                 },
             };
@@ -1063,6 +1066,10 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         this._send_header("ZFIN");
 
         return ret;
+    }
+
+    has_ended() {
+        return !!this._sent_OO;
     }
 
     _send_file_part(bytes_obj, final_packetend) {
