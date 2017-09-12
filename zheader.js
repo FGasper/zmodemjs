@@ -4,10 +4,11 @@
 ( function() {
 "use strict";
 
-const ZDLE_CHAR = String.fromCharCode(Zmodem.ZMLIB.ZDLE);
-
-//"**" + ZDLE_CHAR + "B";
-const HEX_HEADER_PREFIX = [ 0x2a, 0x2a, Zmodem.ZMLIB.ZDLE, 0x42 ];
+const ZPAD = '*'.charCodeAt(0),
+    ZBIN = 'A'.charCodeAt(0),
+    ZHEX = 'B'.charCodeAt(0),
+    ZBIN32 = 'C'.charCodeAt(0)
+;
 
 //NB: lrzsz uses \x8a rather than \x0a where the specs
 //say to use LF. For simplicity, we avoid that and just use
@@ -15,11 +16,109 @@ const HEX_HEADER_PREFIX = [ 0x2a, 0x2a, Zmodem.ZMLIB.ZDLE, 0x42 ];
 const HEX_HEADER_CRLF = [ 0x0d, 0x0a ];
 const HEX_HEADER_CRLF_XON = HEX_HEADER_CRLF.slice(0).concat( [Zmodem.ZMLIB.XON] );
 
-const BINARY16_HEADER_PREFIX = [ 0x2a, Zmodem.ZMLIB.ZDLE, 0x41 ];
-const BINARY32_HEADER_PREFIX = [ 0x2a, Zmodem.ZMLIB.ZDLE, 0x43 ];
+//These are more or less duplicated by the logic in trim_leading_garbage().
+//
+//"**" + ZDLE_CHAR + "B"
+const HEX_HEADER_PREFIX = [ ZPAD, ZPAD, Zmodem.ZMLIB.ZDLE, ZHEX ];
+const BINARY16_HEADER_PREFIX = [ ZPAD, Zmodem.ZMLIB.ZDLE, ZBIN ];
+const BINARY32_HEADER_PREFIX = [ ZPAD, Zmodem.ZMLIB.ZDLE, ZBIN32 ];
 
 /** Class that represents a ZMODEM header. */
 Zmodem.Header = class ZmodemHeader {
+
+    //lrzsz’s “sz” command sends a random (?) CR/0x0d byte
+    //after ZEOF. Let’s accommodate 0x0a, 0x0d, 0x8a, and 0x8d.
+    //
+    //Also, when you skip a file, sz outputs a message about it.
+    //
+    //It appears that we’re supposed to ignore anything until
+    //[ ZPAD, ZDLE ] when we’re looking for a header.
+
+    /**
+     * Weed out the leading bytes that aren’t valid to start a ZMODEM header.
+     *
+     * @param {Array} ibuffer - The octet values to parse.
+     *      Each array member should be an 8-bit unsigned integer (0-255).
+     *      This object is mutated in the function.
+     *
+     * @returns {Array} The octet values that were removed from the start
+     *      of “ibuffer”. Order is preserved.
+     */
+    static trim_leading_garbage(ibuffer) {
+        //Since there’s no escaping of the output it’s possible
+        //that the garbage could trip us up, e.g., by having a filename
+        //be a legit ZMODEM header. But that’s pretty unlikely.
+
+        //Everything up to the first ZPAD: garbage
+        //If first ZPAD has asterisk + ZDLE
+
+        var garbage = [];
+
+        var discard_all, parser, next_ZPAD_at_least = 0;
+
+      TRIM_LOOP:
+        while (ibuffer.length && !parser) {
+            var first_ZPAD = ibuffer.indexOf(ZPAD);
+
+            //No ZPAD? Then we purge the input buffer cuz it’s all garbage.
+            if (first_ZPAD === -1) {
+                discard_all = true;
+                break TRIM_LOOP;
+            }
+            else {
+                garbage.push.apply( garbage, ibuffer.splice(0, first_ZPAD) );
+
+                //buffer has only an asterisk … gotta see about more
+                if (ibuffer.length < 2) {
+                    break TRIM_LOOP;
+                }
+                else if (ibuffer[1] === ZPAD) {
+                    //Two leading ZPADs should be a hex header.
+
+                    //We’re assuming the length of the header is 4 in
+                    //this logic … but ZMODEM isn’t likely to change, so.
+                    if (ibuffer.length < HEX_HEADER_PREFIX.length) {
+                        if (ibuffer.join() === HEX_HEADER_PREFIX.slice(0, ibuffer.length).join()) {
+                            //We have an incomplete fragment that matches
+                            //HEX_HEADER_PREFIX. So don’t trim any more.
+                            break TRIM_LOOP;
+                        }
+
+                        //Otherwise, we’ll discard one.
+                    }
+                    else if ((ibuffer[2] === HEX_HEADER_PREFIX[2]) && (ibuffer[3] === HEX_HEADER_PREFIX[3])) {
+                        parser = _parse_hex;
+                    }
+                }
+                else if (ibuffer[1] === Zmodem.ZMLIB.ZDLE) {
+                    //ZPAD + ZDLE should be a binary header.
+                    if (ibuffer.length < BINARY16_HEADER_PREFIX.length) {
+                        break TRIM_LOOP;
+                    }
+
+                    if (ibuffer[2] === BINARY16_HEADER_PREFIX[2]) {
+                        parser = _parse_binary16;
+                    }
+                    else if (ibuffer[2] === BINARY32_HEADER_PREFIX[2]) {
+                        parser = _parse_binary32;
+                    }
+                }
+
+                if (!parser) {
+                    garbage.push( ibuffer.shift() );
+                }
+            }
+        }
+
+        if (discard_all) {
+            garbage.push.apply( garbage, ibuffer.splice(0) );
+        }
+
+        //For now we’ll throw away the parser.
+        //It’s not hard for parse() to discern anyway.
+
+        return garbage;
+    }
 
     /**
      * Parse out a Header object from a given array of octet values.
@@ -37,17 +136,17 @@ Zmodem.Header = class ZmodemHeader {
      */
     static parse(octets) {
         var hdr;
-        if (octets[1] === 42) {  //'*'
+        if (octets[1] === ZPAD) {
             hdr = _parse_hex(octets);
             return hdr && [ hdr, 16 ];
         }
 
-        else if (octets[2] === 65) {  //'A'
+        else if (octets[2] === ZBIN) {
             hdr = _parse_binary16(octets, 3);
             return hdr && [ hdr, 16 ];
         }
 
-        else if (octets[2] === 67) {  //'C'
+        else if (octets[2] === ZBIN32) {
             hdr = _parse_binary32(octets);
             return hdr && [ hdr, 32 ];
         }
