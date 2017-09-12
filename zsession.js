@@ -10,6 +10,7 @@ const
     MAX_CHUNK_LENGTH = 8192,    //1 KiB officially, but lrzsz allows 8192
     CAN = 0x18,
     BS = 0x8,
+    ZPAD = '*'.charCodeAt(0),
     OVER_AND_OUT = [ 79, 79 ],
     ABORT_SEQUENCE = [ CAN, CAN, CAN, CAN, CAN ]
 ;
@@ -166,20 +167,20 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         this._Add_event("session_end");
     }
 
-    //lrzsz’s “sz” command sends a random (?) CR/0x0d byte
-    //after ZEOF. Let’s accommodate 0x0a, 0x0d, 0x8a, and 0x8d.
-    _trim_leading_CRLF() {
-        do {
-            let lead_7bit = this._input_buffer[0] & 0x7f;
-            if (lead_7bit === 0x0a || lead_7bit === 0x0d) {
-                this._input_buffer.splice(0, 1);
-                continue;
-            }
-        } while (false);
+    _trim_leading_garbage_until_header() {
+        var garbage = Zmodem.Header.trim_leading_garbage(this._input_buffer);
+
+        if (garbage.length) {
+            console.debug(
+                "Garbage: ",
+                String.fromCharCode.apply(String, garbage),
+                garbage
+            );
+        }
     }
 
-    _parse_header() {
-        this._trim_leading_CRLF();
+    _parse_and_consume_header() {
+        this._trim_leading_garbage_until_header();
 
         var new_header_and_crc = Zmodem.Header.parse(this._input_buffer);
         if (!new_header_and_crc) return;
@@ -189,7 +190,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         this._last_header_name = new_header_and_crc[0].NAME;
         this._last_header_crc = new_header_and_crc[1];
 
-        //console.log("RECEIVED HEADER", new_header_and_crc[0]);
+        console.log("RECEIVED HEADER", new_header_and_crc[0]);
 
         return new_header_and_crc[0];
     }
@@ -364,6 +365,8 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         }
 
         var subpacket = Zmodem.Subpacket[parse_func](this._input_buffer);
+
+        console.log("RECEIVED SUBPACKET", subpacket);
 
         if (subpacket) {
 
@@ -587,6 +590,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         var ret = this._make_promise_for_between_files();
 
         this._send_header( "ZSKIP" );
+console.log("sent skip header");
 
         return ret;
     }

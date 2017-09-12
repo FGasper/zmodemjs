@@ -15,6 +15,72 @@ require('../zheader');
 
 var zdle = new Zmodem.ZDLE( { escape_ctrl_chars: true } );
 
+tape('trim_leading_garbage', function(t) {
+    var header = Zmodem.Header.build('ZACK');
+
+    var header_octets = new Map( [
+        [ "hex", header.to_hex(), ],
+        [ "b16", header.to_binary16(zdle), ],
+        [ "b32", header.to_binary32(zdle), ],
+    ] );
+
+    var leading_garbage = [
+        "",
+        " ",
+        "\n\n",
+        "\r\n\r\n",
+        "*",
+        "**",
+        "*\x18",
+        "*\x18D",
+        "**\x18",
+    ];
+
+    leading_garbage.forEach( (garbage) => {
+        let garbage_json = JSON.stringify(garbage);
+        let garbage_octets = testhelp.string_to_octets( garbage );
+
+        for ( let [label, hdr_octets] of header_octets ) {
+            var input = garbage_octets.slice(0).concat( hdr_octets );
+            var trimmed = Zmodem.Header.trim_leading_garbage(input);
+
+            t.deepEquals(trimmed, garbage_octets, `${garbage_json} + ${label}: garbage trimmed`);
+            t.deepEquals(input, hdr_octets, `… leaving the header`);
+        }
+    } );
+
+    //----------------------------------------------------------------------
+
+    //input, number of bytes trimmed
+    var partial_trims = [
+        [ "*", 0 ],
+        [ "**", 0 ],
+        [ "***", 1 ],
+        [ "*\x18**", 2 ],
+        [ "*\x18*\x18", 2 ],
+        [ "*\x18*\x18**", 4 ],
+        [ "*\x18*\x18*\x18", 4 ],
+    ];
+
+    partial_trims.forEach( (cur) => {
+        let [ input, trimmed_count ] = cur;
+
+        let input_json = JSON.stringify(input);
+
+        let input_octets = testhelp.string_to_octets(input);
+
+        let garbage = Zmodem.Header.trim_leading_garbage(input_octets.slice(0));
+
+        t.deepEquals(
+            garbage,
+            input_octets.slice(0, trimmed_count),
+            `${input_json}: trim first ${trimmed_count} byte(s)`
+        );
+    } );
+
+    t.end();
+});
+
 //Test that we parse a trailing 0x8a, since we ourselves follow the
 //documentation and put a plain LF (0x0a).
 tape('parse_hex', function(t) {
