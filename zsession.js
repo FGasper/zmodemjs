@@ -354,7 +354,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
     //Receiver always sends hex headers.
     _get_header_formatter() { return "to_hex" }
 
-    _parse_subpacket() {
+    _parse_and_consume_subpacket() {
         var parse_func;
         if (this._last_header_crc === 16) {
             parse_func = "parse16";
@@ -402,10 +402,10 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         var parsed;
         do {
             if (this._expect_data) {
-                parsed = this._parse_subpacket();
+                parsed = this._parse_and_consume_subpacket();
             }
             else {
-                parsed = this._parse_header();
+                parsed = this._parse_and_consume_header();
             }
         } while (parsed && this._input_buffer.length);
     }
@@ -1109,7 +1109,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     }
 
     _consume_first() {
-        if (!this._parse_header()) {
+        if (!this._parse_and_consume_header()) {
 
             //When the ZMODEM receive program starts, it immediately sends
             //a ZRINIT header to initiate ZMODEM file transfers, or a
