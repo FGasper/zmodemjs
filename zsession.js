@@ -4,6 +4,10 @@
 const
     //pertinent to this module
     KEEPALIVE_INTERVAL = 5000,
+
+    //We ourselves don’t need ESCCTL, so we don’t send it;
+    //however, we always expect to receive it in ZRINIT.
+    //See _ensure_receiver_escapes_ctrl_chars() for more details.
     ZRINIT_FLAGS = [ "CANFDX", "CANOVIO" ],
 
     //pertinent to ZMODEM
@@ -138,6 +142,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     consume(array_buf) {
         if (!array_buf.length) return;
 
+console.log("super consume", array_buf);
         this._strip_and_enqueue_input(array_buf);
 
         this._check_for_abort_sequence(array_buf);
@@ -178,7 +183,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         } while (false);
     }
 
-    _parse_header() {
+    _parse_and_consume_header() {
         this._trim_leading_CRLF();
 
         var new_header_and_crc = Zmodem.Header.parse(this._input_buffer);
@@ -195,6 +200,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     }
 
     _consume_header(new_header) {
+console.log("CONSUMING", new_header);
         this._on_receive(new_header);
 
         var handler = this._next_header_handler[ new_header.NAME ];
@@ -338,6 +344,8 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         //session ends.
         this._bytes_being_consumed = array_buf;
 
+console.log("RECEIVER CONSUMING");
+
         super.consume(array_buf);
     }
 
@@ -354,7 +362,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
     //Receiver always sends hex headers.
     _get_header_formatter() { return "to_hex" }
 
-    _parse_subpacket() {
+    _parse_and_consume_subpacket() {
         var parse_func;
         if (this._last_header_crc === 16) {
             parse_func = "parse16";
@@ -378,6 +386,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
     }
 
     _consume_first() {
+console.log("receiver _consume_first");
         if (this._got_ZFIN) {
             if (this._input_buffer.length < 2) return;
 
@@ -397,14 +406,17 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             }
         }
 
+console.log("buffer", this._input_buffer.join());
+console.log("expect data?", this._expect_data);
         var parsed;
         do {
             if (this._expect_data) {
-                parsed = this._parse_subpacket();
+                parsed = this._parse_and_consume_subpacket();
             }
             else {
-                parsed = this._parse_header();
+                parsed = this._parse_and_consume_header();
             }
+console.log("parsed and consumed", parsed);
         } while (parsed && this._input_buffer.length);
     }
 
@@ -504,7 +516,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         var sess = this;
 
         return new Promise( function(res) {
-            sess._next_header_handler = {
+            var between_files_handler = {
                 ZFILE: function(hdr) {
                     this._consume_ZFILE(hdr);
                     this._expect_data = true;
@@ -516,12 +528,40 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
                     };
                 },
 
+                //We use this as a keep-alive. Maybe other
+                //implementations do, too?
+                ZSINIT: function(hdr) {
+console.log("handling ZSINIT between files");
+                    //The content of this header doesn’t affect us
+                    //since all it does is tell us details of how
+                    //the sender will ZDLE-encode binary data. Our
+                    //ZDLE parser doesn’t need to know in advance.
+
+                    sess._expect_data = true;
+                    sess._next_subpacket_handler = function(spkt) {
+console.log("handling ZSINIT subpacket");
+                        sess._expect_data = false;
+                        sess._consume_ZSINIT_data(spkt);
+                        sess._send_header('ZACK');
+                        sess._next_header_handler = between_files_handler;
+console.log("sent ZACK");
+                    };
+                },
+
                 ZFIN: function() {
                     this._consume_ZFIN();
                     res();
                 },
             };
+
+            sess._next_header_handler = between_files_handler;
         } );
+    }
+
+    _consume_ZSINIT_data(spkt) {
+
+        //TODO: Should this be used when we signal a cancellation?
+        this._attn = spkt.get_payload();
     }
 
     //This returns a promise that’s fulfilled on an offer or close.
@@ -723,6 +763,21 @@ const SENDER_BINARY_HEADER = {
     ZDATA: true,
 };
 
+const LOOKS_LIKE_ZMODEM_HEADER = /\*\x18[AC]|\*\*\x18B/;
+
+function _validate_offer_params(params) {
+    if (!params.name) throw "need “name”!";
+
+    if (LOOKS_LIKE_ZMODEM_HEADER.test(params.name)) {
+        console.warn("The filename " + JSON.stringify(name) + " contains characters that look like a ZMODEM header. This could corrupt the ZMODEM session; consider renaming it without control characters.");
+    }
+
+    //Ensure we don’t skip any fields
+    //Ensure types are correct
+    //TODO: Move the ZFILE subpacket payload creation logic
+    //into this function.
+}
+
 Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     constructor(zrinit_hdr) {
         super();
@@ -840,6 +895,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         this._zencoder.set_escape_ctrl_chars(true);
         //this._send_data( this._get_attn(), "end_ack" );
         this._build_and_send_subpacket( [0], "end_ack" );
+console.log("SENDER SENT ZSINIT SUBPACKET");
     }
 
     _get_attn() {
@@ -872,7 +928,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         }
 
         if (!hdr.escape_ctrl_chars()) {
-            console.info("Peer didn’t request escape of all control characters. Will send ZSINIT to force recognition of escaped control characters.");
+            console.info("Receiver didn’t request escape of all control characters. Will send ZSINIT to force recognition of escaped control characters.");
         }
     }
 
@@ -889,8 +945,12 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
             var sess = this;
             promise = new Promise( function(res) {
                 sess._next_header_handler = {
-                    ZACK: res,
+                    ZACK: (hdr) => {
+                        console.log("SENDER GOT ZACK", hdr);
+                        res();
+                    },
                 };
+console.log("=== sending ZSINIT");
                 sess._send_ZSINIT();
             } );
         }
@@ -903,7 +963,8 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
 
     send_offer(params) {
         if (!params) throw "need file params!";
-        if (!params.name) throw "need “name”!";
+
+        _validate_offer_params(params);
 
         if (this._sending_file) throw "Already sending file!";
 
@@ -932,6 +993,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
 
         var sess = this;
         return this._ensure_receiver_escapes_ctrl_chars().then( function() {
+console.log("sending ZFILE");
 
             //TODO: Might as well combine these together?
             sess._send_header( "ZFILE" );
@@ -1107,7 +1169,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     }
 
     _consume_first() {
-        if (!this._parse_header()) {
+        if (!this._parse_and_consume_header()) {
 
             //When the ZMODEM receive program starts, it immediately sends
             //a ZRINIT header to initiate ZMODEM file transfers, or a
@@ -1125,37 +1187,6 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         this._stop_keepalive();
         super._on_session_end();
     }
-
-        /*
-    _consume_header(new_header) {
-        if (!this._last_sent_header) {
-            throw( "header received unexpectedly: " + new_header.NAME );
-        }
-
-        switch (this._last_sent_header.NAME) {
-
-            //If the last thing we got was ZRQINIT or ZEOF,
-            //then we expect either ZFILE or ZFIN, or maybe ZSINIT.
-            case "ZEOF":
-                switch (new_header.NAME) {
-                    case "ZRINIT":
-                        this._consume_ZRINIT(new_header);
-                        break;
-                }
-                break;
-
-            case "ZDATA":
-                switch (new_header.NAME) {
-                    case "ZRPOS":
-                        //failed previous packet
-                        throw "unimplemented";
-                    default:
-                        this._throw_disallowed_header( [ "ZDATA", "ZEOF" ] );
-                }
-                break;
-        }
-    }
-        */
 }
 
 Object.assign(
