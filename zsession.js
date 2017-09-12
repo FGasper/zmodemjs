@@ -10,7 +10,6 @@ const
     MAX_CHUNK_LENGTH = 8192,    //1 KiB officially, but lrzsz allows 8192
     CAN = 0x18,
     BS = 0x8,
-    ZPAD = '*'.charCodeAt(0),
     OVER_AND_OUT = [ 79, 79 ],
     ABORT_SEQUENCE = [ CAN, CAN, CAN, CAN, CAN ]
 ;
@@ -190,7 +189,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         this._last_header_name = new_header_and_crc[0].NAME;
         this._last_header_crc = new_header_and_crc[1];
 
-        console.log("RECEIVED HEADER", new_header_and_crc[0]);
+        //console.log("RECEIVED HEADER", new_header_and_crc[0]);
 
         return new_header_and_crc[0];
     }
@@ -366,7 +365,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
 
         var subpacket = Zmodem.Subpacket[parse_func](this._input_buffer);
 
-        console.log("RECEIVED SUBPACKET", subpacket);
+        //console.log("RECEIVED SUBPACKET", subpacket);
 
         if (subpacket) {
 
@@ -590,7 +589,6 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         var ret = this._make_promise_for_between_files();
 
         this._send_header( "ZSKIP" );
-console.log("sent skip header");
 
         return ret;
     }
