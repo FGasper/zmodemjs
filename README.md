@@ -163,6 +163,13 @@ to dispense with it, so we might as well do the simpler variant.
 
 * There is no XMODEM/YMODEM fallback.
 
+* Occasionally lrzsz will output things to the console that aren’t
+actual ZMODEM—for example, if you skip an offered file, `sz` will write a
+message about it to the console. For the most part we can accommodate these
+because they happen between ZMODEM headers; however, it’s possible to
+“poison” such messages, e.g., by sending a file whose name includes a
+ZMODEM header. That’s not a normal circumstance, though.
+
 # IMPLEMENTATION NOTES
 
 * I’ve had success integrating zmodem.js with
