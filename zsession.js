@@ -6,6 +6,12 @@ const
     KEEPALIVE_INTERVAL = 5000,
     ZRINIT_FLAGS = [ "CANFDX", "CANOVIO" ],
 
+    //We do this because some WebSocket shell servers
+    //(e.g., xterm.js’s demo server) enable the IEXTEN termios flag,
+    //which bars 0x0f and 0x16 from reaching the shell process,
+    //which results in transmission errors.
+    FORCE_ESCAPE_CTRL_CHARS = true,
+
     //pertinent to ZMODEM
     MAX_CHUNK_LENGTH = 8192,    //1 KiB officially, but lrzsz allows 8192
     CAN = 0x18,
@@ -670,11 +676,23 @@ class ZmodemTransfer {
     constructor(offset, send_func, end_func) {
         this._file_offset = offset || 0;
 
-        this.send = send_func;
-        this.end = end_func;
+        this._send = send_func;
+        this._end = end_func;
     }
 
     get_offset() { return this._file_offset }
+
+    send(array_like) {
+        var ret = this._send(array_like);
+        this._file_offset += array_like.length;
+        return ret;
+    }
+
+    end(array_like) {
+        var ret = this._end(array_like);
+        this._file_offset += array_like.length;
+        return ret;
+    }
 }
 
 class ZmodemOffer extends _Eventer {
@@ -838,8 +856,14 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     _send_ZSINIT() {
         //See note at _ensure_receiver_escapes_ctrl_chars()
         //for why we have to pass ESCCTL.
-        this._send_header("ZSINIT", ["ESCCTL"]);
-        this._zencoder.set_escape_ctrl_chars(true);
+
+        var zsinit_flags = [];
+        if (this._zencoder.escapes_ctrl_chars()) {
+            zsinit_flags.push("ESCCTL");
+        }
+
+        this._send_header("ZSINIT", zsinit_flags);
+
         //this._send_data( this._get_attn(), "end_ack" );
         this._build_and_send_subpacket( [0], "end_ack" );
     }
@@ -873,8 +897,14 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
             throw( "8-bit escaping is unsupported!" );
         }
 
-        if (!hdr.escape_ctrl_chars()) {
-            console.info("Peer didn’t request escape of all control characters. Will send ZSINIT to force recognition of escaped control characters.");
+        if (FORCE_ESCAPE_CTRL_CHARS) {
+            this._zencoder.set_escape_ctrl_chars(true);
+            if (!hdr.escape_ctrl_chars()) {
+                console.info("Peer didn’t request escape of all control characters. Will send ZSINIT to force recognition of escaped control characters.");
+            }
+        }
+        else {
+            this._zencoder.set_escape_ctrl_chars(hdr.escape_ctrl_chars());
         }
     }
 
@@ -933,7 +963,10 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         payload_array = Array.prototype.slice.call(payload_array);
 
         var sess = this;
-        return this._ensure_receiver_escapes_ctrl_chars().then( function() {
+
+        var first_promise = FORCE_ESCAPE_CTRL_CHARS ? this._ensure_receiver_escapes_ctrl_chars() : Promise.resolve();
+
+        return first_promise.then( function() {
 
             //TODO: Might as well combine these together?
             sess._send_header( "ZFILE" );
