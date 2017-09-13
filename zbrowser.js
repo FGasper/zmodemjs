@@ -58,7 +58,7 @@ function send_files(session, files, options) {
 
         file_idx++;
 
-        return zsession.send_offer(cur_b).then( function after_send_offer(xfer) {
+        return session.send_offer(cur_b).then( function after_send_offer(xfer) {
             if (options.on_offer_response) {
                 options.on_offer_response(cur_b.obj, xfer);
             }

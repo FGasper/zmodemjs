@@ -75,6 +75,8 @@ class _Eventer {
         var sess = this;
 
         queue.forEach( function(cb) { cb.apply(sess, args) } );
+
+        return queue.length;
     }
 }
 
@@ -169,6 +171,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
 
         //This is mostly for debugging.
         this._Add_event("receive");
+        this._Add_event("garbage");
         this._Add_event("session_end");
     }
 
@@ -176,11 +179,13 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         var garbage = Zmodem.Header.trim_leading_garbage(this._input_buffer);
 
         if (garbage.length) {
-            console.debug(
-                "Garbage: ",
-                String.fromCharCode.apply(String, garbage),
-                garbage
-            );
+            if (this._Happen("garbage", garbage) === 0) {
+                console.debug(
+                    "Garbage: ",
+                    String.fromCharCode.apply(String, garbage),
+                    garbage
+                );
+            }
         }
     }
 
@@ -1099,7 +1104,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     close() {
         var ok_to_close = (this._last_header_name === "ZRINIT")
         if (!ok_to_close) {
-            ok_to_close = (this._last_header_name !== "ZSKIP");
+            ok_to_close = (this._last_header_name === "ZSKIP");
         }
         if (!ok_to_close) {
             ok_to_close = (this._last_sent_header.name === "ZSINIT") &&  (this._last_header_name === "ZACK");
