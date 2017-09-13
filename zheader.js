@@ -668,7 +668,7 @@ function _parse_hex(bytes_arr) {
             //NB: The spec says CR but seems to treat high-bit variants
             //of control characters the same as the regulars; should we
             //also allow 0x8d?
-            var preceding = hex_bytes[ hex_bytes.length - 1 ];
+            var preceding = hex_bytes.pop();
             if ( preceding !== 0x0d && preceding !== 0x8d ) {
                 hdr_err = "Invalid hex header: (CR/)LF doesn’t have CR!";
             }
@@ -683,16 +683,13 @@ function _parse_hex(bytes_arr) {
         throw hdr_err;
     }
 
-    //7 bytes ultimately:
+    hex_bytes.splice(0, 4);
+
+    //Should be 7 bytes ultimately:
     //  1 for typenum
     //  4 for header data
     //  2 for CRC
-    var octets = new Array(7);
-
-    //2 for typenum, 8 for bytes4, 4 for CRC
-    for (var i=0; i<7; i++) {
-        octets[i] = parseInt( String.fromCharCode( hex_bytes[4 + i * 2], hex_bytes[5 + i * 2] ), 16 );
-    }
+    var octets = Zmodem.ENCODELIB.parse_hex_octets(hex_bytes);
 
     return _parse_non_zdle_binary16(octets);
 }

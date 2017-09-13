@@ -146,9 +146,9 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
 
         this._strip_and_enqueue_input(array_buf);
 
-        this._check_for_abort_sequence(array_buf);
-
-        this._consume_first();
+        if (!this._check_for_abort_sequence(array_buf)) {
+            this._consume_first();
+        }
 
         //console.log("after consume", this, this._input_buffer);
 
@@ -226,6 +226,10 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
             //TODO compare response here to lrzsz.
             this._on_session_end();
 
+            if (this._expect_abort) {
+                return true;
+            }
+
             throw("Received abort signal!");
         }
     }
@@ -259,6 +263,8 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     //TODO: Test this against lrzsz.
     abort() {
 
+        this._expect_abort = true;
+
         //From Forsberg:
         //
         //The Cancel sequence consists of eight CAN characters
@@ -276,7 +282,10 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
                 BS, BS, BS, BS, BS,         // BS, BS, BS,
             ]
         );
-        throw "What now? Reject outstanding promises ...";
+
+        //throw "What now? Reject outstanding promises ...";
+
+        return;
     }
 
     //----------------------------------------------------------------------
@@ -672,15 +681,22 @@ Object.assign(
     }
 );
 
+var Transfer_Offer_Mixin = {
+    get_details() {
+        return JSON.parse( JSON.stringify( this._file_info ) );
+    },
+
+    get_offset() { return this._file_offset }
+};
+
 class ZmodemTransfer {
-    constructor(offset, send_func, end_func) {
+    constructor(file_info, offset, send_func, end_func) {
+        this._file_info = file_info;
         this._file_offset = offset || 0;
 
         this._send = send_func;
         this._end = end_func;
     }
-
-    get_offset() { return this._file_offset }
 
     send(array_like) {
         var ret = this._send(array_like);
@@ -688,12 +704,14 @@ class ZmodemTransfer {
         return ret;
     }
 
+    //Argument is optional.
     end(array_like) {
-        var ret = this._end(array_like);
-        this._file_offset += array_like.length;
+        var ret = this._end(array_like || []);
+        if (array_like) this._file_offset += array_like.length;
         return ret;
     }
 }
+Object.assign( ZmodemTransfer.prototype, Transfer_Offer_Mixin );
 
 class ZmodemOffer extends _Eventer {
     constructor(file_info, accept_func, skip_func) {
@@ -717,13 +735,8 @@ class ZmodemOffer extends _Eventer {
         this._file_offset = offset || 0;
         return this._accept_func(offset);
     }
-
-    get_details() {
-        return JSON.parse( JSON.stringify( this._file_info ) );
-    }
-
-    get_offset() { return this._file_offset }
 }
+Object.assign( ZmodemTransfer.prototype, Transfer_Offer_Mixin );
 
 /*
 function _throw_if_not_number(value, name) {
@@ -987,6 +1000,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
                         sess._sending_file = true;
                         res(
                             new ZmodemTransfer(
+                                params,
                                 hdr.get_offset(),
                                 sess._send_interim_file_piece.bind(sess),
                                 sess._end_file.bind(sess)
@@ -1044,6 +1058,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         if (!this._sending_file) throw "Not sending a file currently!";
     }
 
+    //This resolves once we receive ZEOF.
     _end_file(bytes_obj) {
         this._ensure_we_are_sending();
 
@@ -1082,8 +1097,16 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     }
 
     close() {
-        if ((this._last_header_name !== "ZRINIT") && (this._last_header_name !== "ZSKIP")) {
-            throw( "Can’t close; last header was “" + this._last_header_name + "”" );
+        var ok_to_close = (this._last_header_name === "ZRINIT")
+        if (!ok_to_close) {
+            ok_to_close = (this._last_header_name !== "ZSKIP");
+        }
+        if (!ok_to_close) {
+            ok_to_close = (this._last_sent_header.name === "ZSINIT") &&  (this._last_header_name === "ZACK");
+        }
+
+        if (!ok_to_close) {
+            throw( "Can’t close; last received header was “" + this._last_header_name + "”" );
         }
 
         var sess = this;
@@ -1093,6 +1116,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
                 ZFIN: function() {
                     sess._sender( OVER_AND_OUT );
                     sess._sent_OO = true;
+                    sess._on_session_end();
                     res();
                 },
             };
@@ -1160,37 +1184,6 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         this._stop_keepalive();
         super._on_session_end();
     }
-
-        /*
-    _consume_header(new_header) {
-        if (!this._last_sent_header) {
-            throw( "header received unexpectedly: " + new_header.NAME );
-        }
-
-        switch (this._last_sent_header.NAME) {
-
-            //If the last thing we got was ZRQINIT or ZEOF,
-            //then we expect either ZFILE or ZFIN, or maybe ZSINIT.
-            case "ZEOF":
-                switch (new_header.NAME) {
-                    case "ZRINIT":
-                        this._consume_ZRINIT(new_header);
-                        break;
-                }
-                break;
-
-            case "ZDATA":
-                switch (new_header.NAME) {
-                    case "ZRPOS":
-                        //failed previous packet
-                        throw "unimplemented";
-                    default:
-                        this._throw_disallowed_header( [ "ZDATA", "ZEOF" ] );
-                }
-                break;
-        }
-    }
-        */
 }
 
 Object.assign(

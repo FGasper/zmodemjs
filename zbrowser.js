@@ -31,23 +31,30 @@
 function send_files(session, files, options) {
     if (!options) options = {};
 
+    //Populate the batch in reverse order to simplify sending
+    //the remaining files/bytes components.
     var batch = [];
     var total_size = 0;
-    for (var f=0; f<files_obj.length; f++) {
-        var fobj = files_obj[f];
-        batch.push( {
+    for (var f=files.length - 1; f>=0; f--) {
+        var fobj = files[f];
+        total_size += fobj.size;
+        batch[f] = {
             obj: fobj,
             name: fobj.name,
             size: fobj.size,
-        } );
-        total_size += fobj.size;
+            mtime: new Date(fobj.lastModified),
+            files_remaining: files.length - f,
+            bytes_remaining: total_size,
+        };
     }
 
     var file_idx = 0;
     function promise_callback() {
         var cur_b = batch[file_idx];
 
-        if (!cur_b) return; //batch done!
+        if (!cur_b) {
+            return Promise.resolve(); //batch done!
+        }
 
         file_idx++;
 
@@ -82,11 +89,17 @@ function send_files(session, files, options) {
 
                 reader.onload = function reader_onload(e) {
                     piece = new Uint8Array(e.target.result, xfer, piece)
-                    xfer.end(piece).then(res).then(promise_callback);
+                    xfer.end(piece).then( function() {
+                        if (options.on_file_complete) {
+                            options.on_file_complete(cur_b.obj, xfer, piece);
+                        }
 
-                    if (options.on_file_complete) {
-                        options.on_file_complete(cur_b.obj, xfer);
-                    }
+                        //Resolve the current file-send promise with
+                        //another promise. That promise resolves immediately
+                        //if we’re done, or with another file-send promise
+                        //if there’s more to send.
+                        res( promise_callback() );
+                    } );
                 };
 
                 reader.readAsArrayBuffer(cur_b.obj);

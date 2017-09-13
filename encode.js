@@ -8,6 +8,11 @@ Zmodem.ENCODELIB = (function() {
 
     const HEX_DIGITS = [ 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102 ];
 
+    const HEX_OCTET_VALUE = {};
+    for (var hd=0; hd<HEX_DIGITS.length; hd++) {
+        HEX_OCTET_VALUE[ HEX_DIGITS[hd] ] = hd;
+    }
+
     /**
      * Return an array with the given number as 4 little-endian bytes.
      *
@@ -95,6 +100,24 @@ Zmodem.ENCODELIB = (function() {
         return hex;
     }
 
+    /**
+     * The inverse of octets_to_hex(): takes an array
+     * of hex octet pairs and returns their octet values.
+     *
+     * @param {Array} hex_octets - The hex octet values.
+     *
+     * @returns {Array} - The parsed octet values.
+     */
+    function parse_hex_octets(hex_octets) {
+        var octets = new Array(hex_octets.length / 2);
+
+        for (var i=0; i<octets.length; i++) {
+            octets[i] = (HEX_OCTET_VALUE[ hex_octets[2 * i] ] << 4) + HEX_OCTET_VALUE[ hex_octets[1 + 2 * i] ];
+        }
+
+        return octets;
+    }
+
     return {
         pack_u16_be: pack_u16_be,
         unpack_u16_be: unpack_u16_be,
@@ -103,5 +126,6 @@ Zmodem.ENCODELIB = (function() {
         unpack_u32_le: unpack_u32_le,
 
         octets_to_hex: octets_to_hex,
+        parse_hex_octets: parse_hex_octets,
     };
 }());
