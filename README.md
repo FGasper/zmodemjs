@@ -28,13 +28,9 @@
             zsession.start();
         }
         else {
-            zsession.send_offer( { ... } ).then( (xfer) => {
-                if (!xfer) ...; //skipped
+            //Have the user pick some files, then:
 
-                xfer.send( chunk );
-                xfer.end( chunk );
-            } );
-            zsession.close();
+            Zmodem.Browser.send_files( zsession, files, {...} ).then( ... );
         }
     }
 

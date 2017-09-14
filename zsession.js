@@ -14,10 +14,9 @@ const
 
     //pertinent to ZMODEM
     MAX_CHUNK_LENGTH = 8192,    //1 KiB officially, but lrzsz allows 8192
-    CAN = 0x18,
     BS = 0x8,
     OVER_AND_OUT = [ 79, 79 ],
-    ABORT_SEQUENCE = [ CAN, CAN, CAN, CAN, CAN ]
+    ABORT_SEQUENCE = Zmodem.ZMLIB.ABORT_SEQUENCE
 ;
 
 class _Eventer {
@@ -282,10 +281,9 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         //FG: Since we assume our connection is reliable, there’s
         //no reason to send more than 5 CANs.
         this._sender(
-            [
-                CAN, CAN, CAN, CAN, CAN,    // CAN, CAN, CAN,
-                BS, BS, BS, BS, BS,         // BS, BS, BS,
-            ]
+            ABORT_SEQUENCE.concat([
+                BS, BS, BS, BS, BS,
+            ])
         );
 
         //throw "What now? Reject outstanding promises ...";
