@@ -21,7 +21,7 @@
 
     class Detection {
         constructor(session_type, accepter, checker) {
-            this.accept = accepter;
+            this.confirm = accepter;
             this.is_valid = checker;
             this._session_type = session_type;
         }

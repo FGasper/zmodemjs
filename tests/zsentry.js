@@ -52,7 +52,7 @@ tape('retraction because of non-ZMODEM', (t) => {
     t.end();
 } );
 
-tape('retraction because of duplicate ZMODEM', (t) => {
+tape('retraction because of duplicate ZMODEM, and accept()', (t) => {
     var tester = _generate_tester();
 
     var makes_offer = helper.string_to_octets("**\x18B00000000000000\x0d\x0a\x11");
@@ -76,10 +76,18 @@ tape('retraction because of duplicate ZMODEM', (t) => {
     t.is( first_detected.is_valid(), false, 'old detection is invalid' );
     t.is( tester.detected.is_valid(), true, 'new detection is valid' );
 
-    var session = tester.detected.accept();
+    //----------------------------------------------------------------------
 
-    t.is( (session instanceof Zmodem.Session), true, 'accept() on the detection' );
+    var session = tester.detected.confirm();
+
+    t.is( (session instanceof Zmodem.Session), true, 'confirm() on the detection' );
     t.is( session.type, "receive", 'session is of the right type' );
+
+    tester.reset();
+
+    //Verify that the Detection configures the Session correctly.
+    session.start();
+    t.is( !!tester.to_server.length, true, 'sent output after start()' );
 
     t.end();
 } );
