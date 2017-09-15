@@ -96,6 +96,10 @@
             var new_session = parse_out[1];
 
             if (new_session) {
+                if (this._parsed_session) {
+                    this._on_retract();
+                }
+
                 this._parsed_session = new_session;
 
                 var sentry = this;

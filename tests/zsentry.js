@@ -37,7 +37,7 @@ function _generate_tester() {
     return tester;
 }
 
-tape('retraction', (t) => {
+tape('retraction because of non-ZMODEM', (t) => {
     var tester = _generate_tester();
 
     var makes_offer = helper.string_to_octets("hey**\x18B00000000000000\x0d\x0a\x11");
@@ -48,6 +48,38 @@ tape('retraction', (t) => {
     tester.sentry.consume([ 0x20, 0x21, 0x22 ]);
 
     t.is( tester.retracted, 1, 'retraction since we got non-ZMODEM input' );
+
+    t.end();
+} );
+
+tape('retraction because of duplicate ZMODEM', (t) => {
+    var tester = _generate_tester();
+
+    var makes_offer = helper.string_to_octets("**\x18B00000000000000\x0d\x0a\x11");
+    tester.sentry.consume(makes_offer);
+
+    t.is( typeof tester.detected, "object", 'There is a detection after ZRQINIT' );
+
+    var first_detected = tester.detected;
+    t.is( first_detected.is_valid(), true, 'detection is valid' );
+
+    tester.sentry.consume(makes_offer);
+
+    t.is( tester.retracted, 1, 'retraction since we got non-ZMODEM input' );
+
+    t.notEqual(
+        tester.detected,
+        first_detected,
+        '… but a new detection happened in its place',
+    );
+
+    t.is( first_detected.is_valid(), false, 'old detection is invalid' );
+    t.is( tester.detected.is_valid(), true, 'new detection is valid' );
+
+    var session = tester.detected.accept();
+
+    t.is( (session instanceof Zmodem.Session), true, 'accept() on the detection' );
+    t.is( session.type, "receive", 'session is of the right type' );
 
     t.end();
 } );
@@ -125,6 +157,7 @@ tape('parse', (t) => {
             );
             t.is( typeof tester.detected, "object", '... and now there is a session' );
             t.is( tester.detected.get_session_type(), sesstype, '... of the right type' );
+
         }
     };
 
