@@ -67,6 +67,26 @@ tape('retraction because of YMODEM downgrade', (t) => {
     t.end();
 } );
 
+tape('replacement ZMODEM is not of same type', (t) => {
+    var tester = _generate_tester();
+
+    var zrqinit = helper.string_to_octets("**\x18B00000000000000\x0d\x0a\x11");
+    tester.sentry.consume(zrqinit);
+
+    var before = tester.to_terminal.length;
+
+    var zrinit = helper.string_to_octets("**\x18B0100000000aa51\x0d\x0a\x11");
+    tester.sentry.consume(zrinit);
+
+    t.notEqual(
+        tester.to_terminal.length,
+        before,
+        'output to terminal when replacement session is of different type'
+    );
+
+    t.end();
+} );
+
 tape('retraction because of duplicate ZMODEM, and confirm()', (t) => {
     var tester = _generate_tester();
 
@@ -78,9 +98,12 @@ tape('retraction because of duplicate ZMODEM, and confirm()', (t) => {
     var first_detected = tester.detected;
     t.is( first_detected.is_valid(), true, 'detection is valid' );
 
+    tester.reset();
+
     tester.sentry.consume(makes_offer);
 
     t.is( tester.retracted, 1, 'retraction since we got non-ZMODEM input' );
+    t.deepEquals( tester.to_terminal, [], 'nothing sent to terminal on dupe session' );
 
     t.notEqual(
         tester.detected,

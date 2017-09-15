@@ -19,6 +19,11 @@
         ASTERISK = 42
     ;
 
+    /**
+     * An instance of this object is passed to the Sentry’s on_detect
+     * callback each time the Sentry object sees what looks like the
+     * start of a ZMODEM session.
+     */
     class Detection {
         constructor(session_type, accepter, checker) {
             this.confirm = accepter;
@@ -92,11 +97,19 @@
             }
 
             var parse_out = this._parse(input);
-            input = parse_out[0];
+            var to_terminal = parse_out[0];
             var new_session = parse_out[1];
 
             if (new_session) {
-                if (this._parsed_session) {
+                let replacement_detect = !!this._parsed_session;
+
+                if (replacement_detect) {
+                    //no terminal output if the new session is of the
+                    //same type as the old
+                    if (this._parsed_session.type === new_session.type) {
+                        to_terminal = [];
+                    }
+
                     this._on_retract();
                 }
 
@@ -145,7 +158,7 @@
                     //that means our peer is trying to downgrade to YMODEM.
                     //That won’t work, so we just send the ABORT_SEQUENCE
                     //right away.
-                    if (input.length === 1 && input[0] === 67) {    //67 = 'C'
+                    if (to_terminal.length === 1 && to_terminal[0] === 67) {
                         this._sender( Zmodem.ZMLIB.ABORT_SEQUENCE );
                     }
 
@@ -153,7 +166,7 @@
                 }
             }
 
-            this._to_terminal(input);
+            this._to_terminal(to_terminal);
         }
 
         /**
