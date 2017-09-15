@@ -31,6 +31,13 @@
             this.confirm = accepter;
 
             //deny() - user declines ZMODEM; send abort sequence
+            //
+            //TODO: It might be ideal to forgo the session “peaceably”,
+            //i.e., such that the peer doesn’t end in error. That’s
+            //possible if we’re the sender, we accept the session,
+            //then we just send a close(), but it doesn’t seem to be
+            //possible for a receiver. Thus, let’s just leave it so
+            //it’s at least consistent (and simpler, too).
             this.deny = denier;
 
             this.is_valid = checker;
