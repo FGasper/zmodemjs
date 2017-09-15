@@ -52,7 +52,22 @@ tape('retraction because of non-ZMODEM', (t) => {
     t.end();
 } );
 
-tape('retraction because of duplicate ZMODEM, and accept()', (t) => {
+tape('retraction because of YMODEM downgrade', (t) => {
+    var tester = _generate_tester();
+
+    var makes_offer = helper.string_to_octets("**\x18B00000000000000\x0d\x0a\x11");
+    tester.sentry.consume(makes_offer);
+
+    t.deepEquals( tester.to_server, [], 'nothing sent to server before' );
+
+    tester.sentry.consume( helper.string_to_octets("C") );
+
+    t.deepEquals( tester.to_server, Zmodem.ZMLIB.ABORT_SEQUENCE, 'abort sent to server' );
+
+    t.end();
+} );
+
+tape('retraction because of duplicate ZMODEM, and confirm()', (t) => {
     var tester = _generate_tester();
 
     var makes_offer = helper.string_to_octets("**\x18B00000000000000\x0d\x0a\x11");
