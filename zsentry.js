@@ -1,3 +1,50 @@
+/**
+ * Logic that negotiates the boundary between normal terminal
+ * traffic and ZMODEM: we look for the tell-tale signs of a ZMODEM
+ * transfer and allow the client to determine whether it’s really
+ * ZMODEM or not.
+ *
+ * This logic is not unlikely to need tweaking, and it can never
+ * be fully bulletproof; if it could be bulletproof it would be
+ * simpler since there wouldn’t need to be the .confirm()/.deny()
+ * step.
+ *
+ * One thing you could do to make things a bit simpler *is* just
+ * to make that assumption for your users--i.e., to .confirm()
+ * Detection objects automatically. That’ll be one less step
+ * for the user, but an unaccustomed user might find that a bit
+ * confusing.
+ *
+ * Workflow:
+ *  - parse all input with .consume(). As long as nothing looks
+ *      like ZMODEM, all the traffic will go to to_terminal().
+ *
+ *  - when a “tell-tale” sequence of bytes arrives, we create a
+ *      Detection object and pass it to the “on_detect” handler.
+ *
+ *  - Either .confirm() or .deny() with the Detection object.
+ *      This is the user’s chance to say, “yeah, I know those
+ *      bytes look like ZMODEM, but they’re not. So back off!”
+ *
+ *      If you .confirm(), the Session object is returned, and
+ *      further input that goes to the Sentry’s .consume() will
+ *      go to the (now-active) Session object.
+ *
+ *  - Sometimes additional traffic arrives that makes it apparent
+ *      that no ZMODEM session is intended to start; in this case,
+ *      the Sentry marks the Detection as “stale” and calls the
+ *      “on_retract” handler. Any attempt from here to .confirm()
+ *      on the Detection object will prompt an exception.
+ *
+ *      (This “retraction” behavior will only happen prior to
+ *      .confirm() or .deny() being called on the Detection object.
+ *      Beyond that point, either the Session has to deal with the
+ *      “garbage”, or it’s back to the terminal anyway.
+ *
+ *  - Once the Session object is done, the Sentry will again send
+ *      all traffic to to_terminal().
+ */
+
 ( function() {
     "use strict";
 

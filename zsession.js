@@ -1,3 +1,9 @@
+/**
+ * This is where the protocol-level logic lives: the interaction of ZMODEM
+ * headers and subpackets. The logic here is not unlikely to need tweaking
+ * as little edge cases crop up.
+ */
+
 ( function() {
 "use strict";
 
@@ -19,6 +25,7 @@ const
     ABORT_SEQUENCE = Zmodem.ZMLIB.ABORT_SEQUENCE
 ;
 
+//A base class for objects that have events.
 class _Eventer {
     constructor() {
         this._on_evt = {};
@@ -263,8 +270,10 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         this._input_buffer.push.apply( this._input_buffer, input );
     }
 
-    //Forsberg is a bit murky (IMO) about the mechanics of session aborts.
-    //TODO: Test this against lrzsz.
+    //Forsberg is a bit murky (IMO) about the mechanics of
+    //session aborts. What appears to be the case is that a session
+    //that’s in progress expects to receive an abort in response.
+    //
     abort() {
 
         this._expect_abort = true;
@@ -286,14 +295,8 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
             ])
         );
 
-        //throw "What now? Reject outstanding promises ...";
-
         return;
     }
-
-    //----------------------------------------------------------------------
-
-
 
     //----------------------------------------------------------------------
     _on_session_end() {
