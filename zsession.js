@@ -916,7 +916,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         if (FORCE_ESCAPE_CTRL_CHARS) {
             this._zencoder.set_escape_ctrl_chars(true);
             if (!hdr.escape_ctrl_chars()) {
-                console.info("Peer didn’t request escape of all control characters. Will send ZSINIT to force recognition of escaped control characters.");
+                console.debug("Peer didn’t request escape of all control characters. Will send ZSINIT to force recognition of escaped control characters.");
             }
         }
         else {

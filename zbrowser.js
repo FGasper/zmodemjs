@@ -79,11 +79,16 @@ function send_files(session, files, options) {
 
                 var piece;
                 reader.onprogress = function reader_onprogress(e) {
-                    piece = new Uint8Array(e.target.result, xfer.get_offset())
-                    xfer.send(piece);
 
-                    if (options.on_progress) {
-                        options.on_progress(cur_b.obj, xfer, piece);
+                    //Some browsers (e.g., Chrome) give partial returns,
+                    //while others (e.g., Firefox) don’t.
+                    if (e.target.result) {
+                        piece = new Uint8Array(e.target.result, xfer.get_offset())
+                        xfer.send(piece);
+
+                        if (options.on_progress) {
+                            options.on_progress(cur_b.obj, xfer, piece);
+                        }
                     }
                 };
 
