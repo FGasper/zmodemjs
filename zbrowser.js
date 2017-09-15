@@ -110,8 +110,33 @@ function send_files(session, files, options) {
     return promise_callback();
 }
 
+/**
+ * Prompt a user to save the given octet buffer as a file.
+ *
+ * @param {Uint8Array|Array} octets - The bytes to save.
+ * @param {string} name - The name to give the file.
+ */
+function save_to_disk(octets, name) {
+    var uint8array = new Uint8Array(octets);
+    var blob = new Blob([uint8array]);
+    var url = URL.createObjectURL(blob);
+
+    var el = document.createElement("a");
+    el.style.display = "none";
+    el.href = url;
+    el.download = name;
+    document.body.appendChild(el);
+
+    //It seems like a security problem that this actually works.
+    //But, hey.
+    el.click();
+
+    document.body.removeChild(el);
+}
+
 Zmodem.Browser = {
     send_files: send_files,
+    save_to_disk: save_to_disk,
 };
 
 }());

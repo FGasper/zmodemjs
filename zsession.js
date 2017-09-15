@@ -739,7 +739,7 @@ class ZmodemOffer extends _Eventer {
         return this._accept_func(offset);
     }
 }
-Object.assign( ZmodemTransfer.prototype, Transfer_Offer_Mixin );
+Object.assign( ZmodemOffer.prototype, Transfer_Offer_Mixin );
 
 /*
 function _throw_if_not_number(value, name) {
