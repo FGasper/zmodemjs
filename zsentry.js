@@ -25,9 +25,16 @@
      * start of a ZMODEM session.
      */
     class Detection {
-        constructor(session_type, accepter, checker) {
+        constructor(session_type, accepter, denier, checker) {
+
+            //confirm() - user confirms that ZMODEM is desired
             this.confirm = accepter;
+
+            //deny() - user declines ZMODEM; send abort sequence
+            this.deny = denier;
+
             this.is_valid = checker;
+
             this._session_type = session_type;
         }
 
@@ -138,6 +145,7 @@
                 this._on_detect( new Detection(
                     new_session.type,
                     accepter,
+                    this._send_abort.bind(this),
                     checker
                 ) );
             }
@@ -159,7 +167,7 @@
                     //That won’t work, so we just send the ABORT_SEQUENCE
                     //right away.
                     if (to_terminal.length === 1 && to_terminal[0] === 67) {
-                        this._sender( Zmodem.ZMLIB.ABORT_SEQUENCE );
+                        this._send_abort();
                     }
 
                     this._on_retract();
@@ -167,6 +175,10 @@
             }
 
             this._to_terminal(to_terminal);
+        }
+
+        _send_abort() {
+            this._sender( Zmodem.ZMLIB.ABORT_SEQUENCE );
         }
 
         /**

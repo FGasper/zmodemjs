@@ -37,6 +37,27 @@ function _generate_tester() {
     return tester;
 }
 
+tape('user says deny() to detection', (t) => {
+    var tester = _generate_tester();
+
+    var makes_offer = helper.string_to_octets("hey**\x18B00000000000000\x0d\x0a\x11");
+    tester.sentry.consume(makes_offer);
+
+    t.is( typeof tester.detected, "object", 'There is a session after ZRQINIT' );
+
+    var sent_before = tester.to_server.length;
+
+    tester.detected.deny();
+
+    t.deepEqual(
+        tester.to_server.slice(-Zmodem.ZMLIB.ABORT_SEQUENCE.length),
+        Zmodem.ZMLIB.ABORT_SEQUENCE,
+        'deny() sends abort sequence to server',
+    );
+
+    t.end();
+} );
+
 tape('retraction because of non-ZMODEM', (t) => {
     var tester = _generate_tester();
 
