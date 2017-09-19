@@ -114,6 +114,10 @@
             this._cache = [];
         }
 
+        _after_session_end() {
+            this._zsession = null;
+        }
+
         /**
          * “Consumes” a piece of input:
          *
@@ -142,17 +146,17 @@
             }
 
             if (this._zsession) {
-                this._zsession.consume(input);
+                var session_before_consume = this._zsession;
 
-                if (this._zsession.has_ended()) {
-                    if (this._zsession.type === "receive") {
+                session_before_consume.consume(input);
+
+                if (session_before_consume.has_ended()) {
+                    if (session_before_consume.type === "receive") {
                         input = this._zsession.get_trailing_bytes();
                     }
                     else {
                         input = [];
                     }
-
-                    this._zsession = null;
                 }
                 else return;
             }
@@ -189,6 +193,12 @@
                     }
 
                     new_session.on("garbage", sentry._to_terminal);
+
+                    new_session.on(
+                        "session_end",
+                        sentry._after_session_end.bind(sentry)
+                    );
+
                     new_session.set_sender(sentry._sender);
 
                     delete sentry._parsed_session;
