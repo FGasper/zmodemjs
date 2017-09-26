@@ -3,6 +3,7 @@
 
     const TYPE_MESSAGE = {
         "aborted": "Session aborted",
+        "peer_aborted": "Peer aborted session",
         "already_aborted": "Session already aborted",
     };
 

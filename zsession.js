@@ -238,6 +238,8 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
             //TODO: expose this to caller
             this._input_buffer.splice( 0, abort_at + ABORT_SEQUENCE.length );
 
+            this._aborted = true;
+
             //TODO compare response here to lrzsz.
             this._on_session_end();
 
@@ -248,7 +250,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
             //    return true;
             //}
 
-            throw("Received abort signal!");
+            throw new Zmodem.Error("peer_aborted");
         }
     }
 
@@ -375,6 +377,8 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
     }
 
     get_trailing_bytes() {
+        if (this._aborted) return [];
+
         if (!this._bytes_after_OO) {
             throw "PROTOCOL: Session is not completed!";
         }
@@ -1146,7 +1150,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     }
 
     has_ended() {
-        return !!this._sent_OO;
+        return this._aborted || !!this._sent_OO;
     }
 
     _send_file_part(bytes_obj, final_packetend) {
