@@ -49,7 +49,7 @@ function _test_steps(t, steps) {
         on_detect: (d) => { zsession = d.confirm() },
         on_retract: console.error.bind(console),
         sender: (d) => {
-console.log("about to write to child", d);
+console.log("about to write to child", new Buffer(d));
             try {
                 child.stdin.write( new Buffer(d) );
             }
