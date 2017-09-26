@@ -4,7 +4,10 @@
   "description": "ZMODEM file transfers in JavaScript",
   "main": "zmodem.js",
   "devDependencies": {
-    "tape": "*"
+    "blue-tape": "^1.0.0",
+    "tape": "*",
+    "text-encoding": "^0.6.4",
+    "tmp": "0.0.33"
   },
   "directories": {
     "test": "tests"
@@ -31,5 +34,6 @@
   "bugs": {
     "url": "https://github.com/FGasper/zmodemjs/issues"
   },
-  "homepage": "https://github.com/FGasper/zmodemjs#readme"
+  "homepage": "https://github.com/FGasper/zmodemjs#readme",
+  "dependencies": {}
 }
