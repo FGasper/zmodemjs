@@ -296,7 +296,7 @@
                 }
 
                 return [
-                    array_like.slice( 0, array_like.length - cache.length ),
+                    array_like,
                     zsession,
 
                     //Is there any possibility of “consumable” ZMODEM

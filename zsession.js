@@ -150,6 +150,8 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
      * @param {Function} array_buf - The input octets.
      */
     consume(array_buf) {
+        if (this._aborted) throw new Zmodem.Error('already_aborted');
+
         if (!array_buf.length) return;
 
         this._strip_and_enqueue_input(array_buf);
@@ -162,6 +164,8 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
 
         return;
     }
+
+    aborted() { return !!this._aborted }
 
     constructor() {
         super();
@@ -237,9 +241,12 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
             //TODO compare response here to lrzsz.
             this._on_session_end();
 
-            if (this._expect_abort) {
-                return true;
-            }
+            //We shouldn’t ever expect to receive an abort. Even if we
+            //have sent an abort ourselves, the Sentry should have stopped
+            //directing input to this Session object.
+            //if (this._expect_abort) {
+            //    return true;
+            //}
 
             throw("Received abort signal!");
         }
@@ -276,7 +283,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     //
     abort() {
 
-        this._expect_abort = true;
+        //this._expect_abort = true;
 
         //From Forsberg:
         //
@@ -294,6 +301,11 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
                 BS, BS, BS, BS, BS,
             ])
         );
+
+        this._aborted = true;
+        this._sender = function() { throw new Zmodem.Error('already_aborted') };
+
+        this._on_session_end();
 
         return;
     }

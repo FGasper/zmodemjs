@@ -84,6 +84,9 @@ function send_files(session, files, options) {
                     //while others (e.g., Firefox) don’t.
                     if (e.target.result) {
                         piece = new Uint8Array(e.target.result, xfer.get_offset())
+
+                        _check_aborted(session);
+
                         xfer.send(piece);
 
                         if (options.on_progress) {
@@ -94,6 +97,9 @@ function send_files(session, files, options) {
 
                 reader.onload = function reader_onload(e) {
                     piece = new Uint8Array(e.target.result, xfer, piece)
+
+                    _check_aborted(session);
+
                     xfer.end(piece).then( function() {
                         if (options.on_file_complete) {
                             options.on_file_complete(cur_b.obj, xfer, piece);
@@ -116,14 +122,13 @@ function send_files(session, files, options) {
 }
 
 /**
- * Prompt a user to save the given octet buffer as a file.
+ * Prompt a user to save the given packets as a file.
  *
- * @param {Uint8Array|Array} octets - The bytes to save.
+ * @param {Array} packets - Same as the first argument to Blob’s constructor.
  * @param {string} name - The name to give the file.
  */
-function save_to_disk(octets, name) {
-    var uint8array = new Uint8Array(octets);
-    var blob = new Blob([uint8array]);
+function save_to_disk(packets, name) {
+    var blob = new Blob(packets);
     var url = URL.createObjectURL(blob);
 
     var el = document.createElement("a");
@@ -132,11 +137,19 @@ function save_to_disk(octets, name) {
     el.download = name;
     document.body.appendChild(el);
 
-    //It seems like a security problem that this actually works.
+    //It seems like a security problem that this actually works;
+    //I’d think there would need to be some confirmation before
+    //a browser could save arbitrarily many bytes onto the disk.
     //But, hey.
     el.click();
 
     document.body.removeChild(el);
+}
+
+function _check_aborted(session) {
+    if (session.aborted()) {
+        throw new Zmodem.Error("aborted");
+    }
 }
 
 Zmodem.Browser = {

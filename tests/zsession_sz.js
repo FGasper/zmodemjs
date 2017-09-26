@@ -2,7 +2,7 @@
 
 const tape = require('blue-tape');
 
-const SZ_PATH = require('which').sync('ssz', {nothrow: true});
+const SZ_PATH = require('which').sync('sz', {nothrow: true});
 
 if (!SZ_PATH) {
     tape.only('SKIP: no “sz” in PATH!', (t) => {
@@ -58,7 +58,13 @@ function _test_steps(t, steps) {
 
     child = spawn(SZ_PATH, [tmpobj.name]);
     child.on("error", console.error.bind(console));
-    child.stderr.pipe( process.stderr );
+
+    //We can’t just pipe this on through because there can be lone CR
+    //bytes which screw up TAP::Harness.
+    child.stderr.on("data", (d) => {
+        process.stdout.write( d.toString().replace(/\r/g, "\n") );
+    });
+
     child.stdout.on("data", (d) => {
         //console.log("stdout", d);
         inputs.push( Array.from(d) );
@@ -149,12 +155,12 @@ tape('abort() during download', { timeout: 30000 }, (t) => {
                 var str = String.fromCharCode.apply( String, bytes );
                 return !/THE_END/.test(str);
             } ),
-            "the end of the file wasn’t sent",
+            "the end of the file was not sent",
         );
     } );
 });
 
-tape('abort() after ZEOF', (t) => {
+tape("abort() after ZEOF", (t) => {
     var received;
 
     return _test_steps( t, [
@@ -173,6 +179,6 @@ tape('abort() after ZEOF', (t) => {
         },
     ] ).then( (inputs) => {
         var str = String.fromCharCode.apply( String, inputs[ inputs.length - 1 ]);
-        t.is( str, "OO", 'abort() right after receipt of ZEOF' );
+        t.is( str, "OO", "successful close despite abort" );
     } );
 });
