@@ -7,7 +7,8 @@
     "blue-tape": "^1.0.0",
     "tape": "*",
     "text-encoding": "^0.6.4",
-    "tmp": "0.0.33"
+    "tmp": "0.0.33",
+    "which": "^1.3.0"
   },
   "directories": {
     "test": "tests"

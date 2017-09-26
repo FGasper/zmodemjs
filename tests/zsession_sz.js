@@ -1,6 +1,15 @@
 #!/usr/bin/env node
 
 const tape = require('blue-tape');
+
+const SZ_PATH = require('which').sync('ssz', {nothrow: true});
+
+if (!SZ_PATH) {
+    tape.only('SKIP: no “sz” in PATH!', (t) => {
+        t.end();
+    });
+}
+
 const tmp = require('tmp');
 const spawn = require('child_process').spawn;
 
@@ -47,7 +56,7 @@ function _test_steps(t, steps) {
     var step = 0;
     var inputs = [];
 
-    child = spawn("sz", [tmpobj.name]);
+    child = spawn(SZ_PATH, [tmpobj.name]);
     child.on("error", console.error.bind(console));
     child.stderr.pipe( process.stderr );
     child.stdout.on("data", (d) => {
