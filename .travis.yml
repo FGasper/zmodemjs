@@ -1,7 +1,7 @@
 language: node_js
 os:
   - linux
-#  - osx
+  - osx
 node_js:
   - "node"
 before_install:
