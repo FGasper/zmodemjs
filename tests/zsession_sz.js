@@ -49,7 +49,7 @@ function _test_steps(t, steps) {
         on_detect: (d) => { zsession = d.confirm() },
         on_retract: console.error.bind(console),
         sender: (d) => {
-console.log("about to write to child");
+console.log("about to write to child", d);
             try {
                 child.stdin.write( new Buffer(d) );
             }
@@ -73,7 +73,7 @@ console.log("about to write to STDERR");
     });
 
     child.stdout.on("data", (d) => {
-        //console.log("stdout", d);
+        console.log("STDOUT from child", d);
         inputs.push( Array.from(d) );
 
         zsentry.consume( Array.from(d) );
