@@ -49,14 +49,7 @@ function _test_steps(t, steps) {
         on_detect: (d) => { zsession = d.confirm() },
         on_retract: console.error.bind(console),
         sender: (d) => {
-console.log("about to write to child", new Buffer(d));
-console.trace();
-            try {
-                child.stdin.write( new Buffer(d) );
-            }
-            catch(e) {
-                console.warn(e);
-            }
+            child.stdin.write( new Buffer(d) );
         },
     } );
 
@@ -69,12 +62,11 @@ console.trace();
     //We can’t just pipe this on through because there can be lone CR
     //bytes which screw up TAP::Harness.
     child.stderr.on("data", (d) => {
-console.log("about to write to STDERR");
         process.stderr.write( d.toString().replace(/\r/g, "\n") );
     });
 
     child.stdout.on("data", (d) => {
-        console.log("STDOUT from child", d);
+        //console.log("STDOUT from child", d);
         inputs.push( Array.from(d) );
 
         zsentry.consume( Array.from(d) );
@@ -86,7 +78,6 @@ console.log("about to write to STDERR");
                 }
             }
             else {
-console.log("closing child STDIN");
                 child.stdin.end();
             }
         }
@@ -169,12 +160,13 @@ tape('abort() during download', { timeout: 30000 }, (t) => {
     } );
 });
 
-tape("abort() after ZEOF", (t) => {
+//This doesn’t work because we automatically send ZFIN once we receive it,
+//which prompts the child to finish up.
+tape.skip("abort() after ZEOF", (t) => {
     var received;
 
     return _test_steps( t, [
         (zsession) => {
-console.log("step 1");
             zsession.on("offer", (offer) => {
                 offer.accept().then( () => { received = true } );
             } );
@@ -183,7 +175,6 @@ console.log("step 1");
         },
         (zsession) => {
             if (received) {
-console.log("aborting");
                 zsession.abort();
                 return true;
             }
