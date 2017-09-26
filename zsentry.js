@@ -161,9 +161,8 @@
                 else return;
             }
 
-            var parse_out = this._parse(input);
-            var to_terminal = parse_out[0];
-            var new_session = parse_out[1];
+            var new_session = this._parse(input);
+            var to_terminal = input;
 
             if (new_session) {
                 let replacement_detect = !!this._parsed_session;
@@ -291,23 +290,15 @@
                     cache.shift();
                 }
 
-                if (cache.length) {
-                    return [array_like];
-                }
-
-                return [
-                    array_like,
-                    zsession,
-
-                    //Is there any possibility of “consumable” ZMODEM
-                    //bytes left in this._cache?
-                    this._cache.splice(0),
-                ];
+                //If there are still bytes in the cache,
+                //then we don’t have a ZMODEM session. This logic depends
+                //on the sender only sending one initial header.
+                return cache.length ? null : zsession;
             }
 
             cache.splice( MAX_ZM_HEX_START_LENGTH );
 
-            return [array_like];
+            return null;
         }
     }
 }());
