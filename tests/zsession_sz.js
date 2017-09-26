@@ -50,6 +50,7 @@ function _test_steps(t, steps) {
         on_retract: console.error.bind(console),
         sender: (d) => {
 console.log("about to write to child", new Buffer(d));
+console.trace();
             try {
                 child.stdin.write( new Buffer(d) );
             }
