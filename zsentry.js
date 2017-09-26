@@ -152,7 +152,7 @@
 
                 if (session_before_consume.has_ended()) {
                     if (session_before_consume.type === "receive") {
-                        input = this._zsession.get_trailing_bytes();
+                        input = session_before_consume.get_trailing_bytes();
                     }
                     else {
                         input = [];
