@@ -49,6 +49,7 @@ function _test_steps(t, steps) {
         on_detect: (d) => { zsession = d.confirm() },
         on_retract: console.error.bind(console),
         sender: (d) => {
+console.log("about to write to child");
             try {
                 child.stdin.write( new Buffer(d) );
             }
@@ -67,6 +68,7 @@ function _test_steps(t, steps) {
     //We can’t just pipe this on through because there can be lone CR
     //bytes which screw up TAP::Harness.
     child.stderr.on("data", (d) => {
+console.log("about to write to STDERR");
         process.stderr.write( d.toString().replace(/\r/g, "\n") );
     });
 
@@ -83,6 +85,7 @@ function _test_steps(t, steps) {
                 }
             }
             else {
+console.log("closing child STDIN");
                 child.stdin.end();
             }
         }
