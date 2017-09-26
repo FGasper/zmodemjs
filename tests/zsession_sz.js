@@ -170,6 +170,7 @@ tape("abort() after ZEOF", (t) => {
 
     return _test_steps( t, [
         (zsession) => {
+console.log("step 1");
             zsession.on("offer", (offer) => {
                 offer.accept().then( () => { received = true } );
             } );
@@ -178,6 +179,7 @@ tape("abort() after ZEOF", (t) => {
         },
         (zsession) => {
             if (received) {
+console.log("aborting");
                 zsession.abort();
                 return true;
             }
