@@ -645,6 +645,13 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         var ret = this._make_promise_for_between_files();
 
         if (this._accepted_offer) {
+            //XXX: For cancel of an in-progress transfer from lsz,
+            //it’s necessary to fix this buffer overflow bug:
+            //
+            //  https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch
+            //
+            //… but there doesn’t seem to be an easy way to do that
+            //and have the fix widely distributed.
 
             //Treat anything prior to a header as garbage.
             this._next_subpacket_handler = null;
