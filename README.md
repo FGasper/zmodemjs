@@ -28,13 +28,9 @@
             zsession.start();
         }
         else {
-            zsession.send_offer( { ... } ).then( (xfer) => {
-                if (!xfer) ...; //skipped
+            //Have the user pick some files, then:
 
-                xfer.send( chunk );
-                xfer.end( chunk );
-            } );
-            zsession.close();
+            Zmodem.Browser.send_files( zsession, files, {...} ).then( ... );
         }
     }
 
@@ -163,6 +159,18 @@ to dispense with it, so we might as well do the simpler variant.
 
 * There is no XMODEM/YMODEM fallback.
 
+* Occasionally lrzsz will output things to the console that aren’t
+actual ZMODEM—for example, if you skip an offered file, `sz` will write a
+message about it to the console. For the most part we can accommodate these
+because they happen between ZMODEM headers; however, it’s possible to
+“poison” such messages, e.g., by sending a file whose name includes a
+ZMODEM header. That’s not a normal circumstance, though.
+
+* lrzsz has a [buffer overflow bug](https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch) that makes the terminal go a bit wonky if you try to abort
+a session while receiving a file. There’s not much that can be done about
+this since lrzsz is basically unmaintained. (Its last update was almost
+20 years ago as of this writing.)
+
 # IMPLEMENTATION NOTES
 
 * I’ve had success integrating zmodem.js with
@@ -172,6 +180,12 @@ to dispense with it, so we might as well do the simpler variant.
 to escape everything down to 7-bit ASCII, but it doesn’t seem to have
 been implemented?) Hence, if you’re using WebSocket, you’ll need to
 send and receive binary messages, not text.
+
+* lrzsz is the only widely-distributed ZMODEM implementation nowadays,
+which makes it a de facto standard in its
+own right. Thus far all end-to-end testing has been against it. It is
+thus possible that resolutions to disparities between `lrzsz` and the
+protocol specification may need to favor the implementation.
 
 * It is a generally-unavoidable byproduct of how ZMODEM works that
 the first header in a ZMODEM session will echo to the terminal. This
@@ -201,8 +215,7 @@ seems to be more standardized than ZMODEM but **much** more complex.
 # SOURCES
 
 ZMODEM is not standardized in a nice, clean, official RFC like DNS or HTTP;
-rather, it was one guy’s solution to a problem that
-eventually just became a lot less important than it had been. There is
+rather, it was one guy’s solution to a particular problem. There is
 documentation, but it’s not as helpful as it might be; for example,
 there’s only one example workflow given, and it’s a “happy-path”
 transmission of a single file.
@@ -266,14 +279,13 @@ production code.
 # CONTRIBUTING
 
 Contributions are welcome via the GitHub repository,
-https://github.com/FGasper/zmodemjs.
+[https://github.com/FGasper/zmodemjs](https://github.com/FGasper/zmodemjs).
 
 # TODO
 
 * Be more resilient against failures, including cancellation.
 
-* Error classes, probably using ES6 `Error` subclassing. Add
-documentation.
+* More and better error classes. These should be documented eventually.
 
 * More testing.
 

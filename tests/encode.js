@@ -86,6 +86,16 @@ tape('octets_to_hex', function(t) {
     t.end();
 } );
 
+tape('parse_hex_octets', function(t) {
+    t.deepEquals(
+        enclib.parse_hex_octets( [ 48, 49, 102, 101 ] ),
+        [ 0x01, 0xfe ],
+        'parse hex excoding',
+    );
+
+    t.end();
+} );
+
 tape('round-trip: 16-bit big-endian', function(t) {
     var times = 10000;
 

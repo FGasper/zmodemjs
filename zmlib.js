@@ -11,7 +11,10 @@ Zmodem.ZMLIB = (function() {
         XON = 0x11,
         XOFF = 0x13,
         XON_HIGH = 0x80 | XON,
-        XOFF_HIGH = 0x80 | XOFF
+        XOFF_HIGH = 0x80 | XOFF,
+
+        CAN = 0x18,     //NB: same character as ZDLE
+        ABORT_SEQUENCE = [ CAN, CAN, CAN, CAN, CAN ]
     ;
 
     /**
@@ -102,6 +105,7 @@ Zmodem.ZMLIB = (function() {
         ZDLE: ZDLE,
         XON: XON,
         XOFF: XOFF,
+        ABORT_SEQUENCE: ABORT_SEQUENCE,
         strip_ignored_bytes:    strip_ignored_bytes,
         get_random_octets:      get_random_octets,
         find_subarray:          find_subarray,

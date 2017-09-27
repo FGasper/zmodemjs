@@ -77,28 +77,33 @@ Zmodem.ZDLE = class ZmodemZDLE {
     encode(octets) {
         if (!this._zdle_table) throw "No ZDLE encode table configured!";
 
+        var zdle_table = this._zdle_table;
+
+        var last_code = this._lastcode;
+
         for (encode_cur=0; encode_cur<octets.length; encode_cur++) {
 
-            encode_todo = this._zdle_table[octets[encode_cur]];
+            encode_todo = zdle_table[octets[encode_cur]];
             if (!encode_todo) {
                 console.trace();
                 console.error("bad encode() call:", JSON.stringify(octets));
+                this._lastcode = last_code;
                 throw( "Invalid octet: " + octets[encode_cur] );
             }
 
-            this._lastcode = octets[encode_cur];
+            last_code = octets[encode_cur];
 
             if (encode_todo === 1) continue;
 
             //0x40 = '@'; i.e., only escape if the last
             //octet was '@'.
-            if (encode_todo === 3 && ((this._lastcode & 0x7f) != 0x40)) {
-                continue;
+            if ((encode_todo !== 3) || ((last_code & 0x7f) === 0x40)) {
+                last_code ^= 0x40;   //0100
+                octets.splice(encode_cur, 1, ZDLE, last_code);
             }
-
-            this._lastcode ^= 0x40;   //0100
-            octets.splice(encode_cur, 1, ZDLE, this._lastcode);
         }
+
+        this._lastcode = last_code;
 
         return octets;
     }
