@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+"use strict";
+
 var tape = require('tape');
 
 var testhelp = require('./lib/testhelp');

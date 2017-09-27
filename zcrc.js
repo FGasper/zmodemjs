@@ -211,21 +211,20 @@ Zmodem.CRC = (function() {
      *      an array of octet values.
      */
     function verify32(bytes_arr, crc) {
-        return __verify( crc32(bytes_arr), crc );
+        try {
+            __verify( crc32(bytes_arr), crc );
+        }
+        catch(err) {
+            err.input = bytes_arr.slice(0);
+            throw err;
+        }
     }
 
     function __verify(expect, got) {
         var err;
 
-        if (expect.length !== got.length) {
-            err = "Invalid length";
-        }
-        else if ( expect.join() !== got.join() ) {
-            err = "Mismatch";
-        }
-
-        if (err) {
-            throw( "Zmodem CRC error: " + err + " (expected: " + expect.join() + "; got: " + got.join() + ")" );
+        if ( expect.join() !== got.join() ) {
+            throw new Zmodem.Error("crc", got, expect);
         }
     }
 

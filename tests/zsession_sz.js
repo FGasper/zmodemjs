@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+"use strict";
+
+const fs = require('fs');
 const tape = require('blue-tape');
 
 const SZ_PATH = require('which').sync('sz', {nothrow: true});
@@ -24,6 +27,7 @@ Object.assign(
 );
 
 require('../encode');
+require('../zerror');
 require('../zmlib');
 require('../zcrc');
 require('../zdle');
@@ -32,15 +36,20 @@ require('../zsubpacket');
 require('../zsession');
 require('../zsentry');
 
-var tmpobj = tmp.fileSync();
-var fs = require('fs');
-for (let i of [ ... Array(500000) ]) {
-    fs.writeSync( tmpobj.fd, "0123456789" );
-}
-fs.writeSync( tmpobj.fd, "=THE_END" );
-fs.closeSync( tmpobj.fd );
+function _make_temp_file() {
+    var tmpobj = tmp.fileSync();
+    for (let i of [ ... Array(500000) ]) {
+        fs.writeSync( tmpobj.fd, "0123456789" );
+    }
+    fs.writeSync( tmpobj.fd, "=THE_END" );
+    fs.closeSync( tmpobj.fd );
 
-function _test_steps(t, steps) {
+    return tmpobj.name;
+}
+
+var FILE1 = _make_temp_file();
+
+function _test_steps(t, sz_args, steps) {
     var child;
 
     var zsession;
@@ -56,7 +65,7 @@ function _test_steps(t, steps) {
     var step = 0;
     var inputs = [];
 
-    child = spawn(SZ_PATH, [tmpobj.name]);
+    child = spawn(SZ_PATH, sz_args);
     child.on("error", console.error.bind(console));
 
     //We can’t just pipe this on through because there can be lone CR
@@ -85,7 +94,7 @@ function _test_steps(t, steps) {
 
     var exit_promise = new Promise( (res, rej) => {
         child.on("exit", (code, signal) => {
-            //console.log(`exit - code ${code}, signal ${signal}`);
+            console.log(`# "${SZ_PATH}" exit: code ${code}, signal ${signal}`);
             res([code, signal]);
         } );
     } );
@@ -94,7 +103,7 @@ function _test_steps(t, steps) {
 }
 
 tape('abort() after ZRQINIT', (t) => {
-    return _test_steps( t, [
+    return _test_steps( t, [FILE1], [
         (zsession, child) => {
             zsession.abort();
             return true;
@@ -111,7 +120,7 @@ tape('abort() after ZRQINIT', (t) => {
 });
 
 tape('abort() after ZFILE', (t) => {
-    return _test_steps( t, [
+    return _test_steps( t, [FILE1], [
         (zsession) => {
             zsession.start();
             return true;
@@ -135,7 +144,7 @@ tape('abort() after ZFILE', (t) => {
 //on sz reading the abort sequence prior to finishing its read
 //of the file.
 tape('abort() during download', { timeout: 30000 }, (t) => {
-    var child_pms = _test_steps( t, [
+    var child_pms = _test_steps( t, [FILE1], [
         (zsession) => {
             zsession.on("offer", (offer) => offer.accept() );
             zsession.start();
@@ -160,12 +169,53 @@ tape('abort() during download', { timeout: 30000 }, (t) => {
     } );
 });
 
+//This only works when the zsdata() buffer overflow bug is fixed,
+//as demonstrated here:
+//
+//  https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch
+//
+tape.skip('skip() during download', { timeout: 30000 }, (t) => {
+    var filenames = [FILE1, _make_temp_file()];
+    //filenames = ["-vvvvvvvvvvvvv", FILE1, _make_temp_file()];
+
+    var started, second_offer;
+
+    return _test_steps( t, filenames, [
+        (zsession) => {
+            if (!started) {
+                function offer_taker(offer) {
+                    offer.accept();
+                    offer.skip();
+                    zsession.off("offer", offer_taker);
+                    zsession.on("offer", (offer2) => {
+                        second_offer = offer2;
+                        offer2.skip();
+                    });
+                }
+                zsession.on("offer", offer_taker);
+                zsession.start();
+                started = true;
+            }
+            //return true;
+        },
+    ] ).then( (inputs) => {
+        var never_end = inputs.every( function(bytes) {
+            var str = String.fromCharCode.apply( String, bytes );
+            return !/THE_END/.test(str);
+        } );
+
+        t.ok( never_end, "the end of a file is never sent" );
+
+        t.ok( !!second_offer, "we got a 2nd offer after the first" );
+    } );
+});
+
 //This doesn’t work because we automatically send ZFIN once we receive it,
 //which prompts the child to finish up.
 tape.skip("abort() after ZEOF", (t) => {
     var received;
 
-    return _test_steps( t, [
+    return _test_steps( t, [FILE1], [
         (zsession) => {
             zsession.on("offer", (offer) => {
                 offer.accept().then( () => { received = true } );

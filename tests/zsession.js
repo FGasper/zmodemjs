@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+"use strict";
+
 const test = require('blue-tape');
 
 /*

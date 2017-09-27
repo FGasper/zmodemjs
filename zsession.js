@@ -25,7 +25,6 @@ const
     //pertinent to ZMODEM
     MAX_CHUNK_LENGTH = 8192,    //1 KiB officially, but lrzsz allows 8192
     BS = 0x8,
-    ZPAD = '*'.charCodeAt(0),
     OVER_AND_OUT = [ 79, 79 ],
     ABORT_SEQUENCE = Zmodem.ZMLIB.ABORT_SEQUENCE
 ;
@@ -159,14 +158,11 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
 
         if (!array_buf.length) return;
 
-console.log("super consume", array_buf);
         this._strip_and_enqueue_input(array_buf);
 
         if (!this._check_for_abort_sequence(array_buf)) {
             this._consume_first();
         }
-
-        //console.log("after consume", this, this._input_buffer);
 
         return;
     }
@@ -194,7 +190,7 @@ console.log("super consume", array_buf);
     _trim_leading_garbage_until_header() {
         var garbage = Zmodem.Header.trim_leading_garbage(this._input_buffer);
 
-        if (garbage.length) {
+        if (!this._throw_away_garbage_until_next_header && garbage.length) {
             if (this._Happen("garbage", garbage) === 0) {
                 console.debug(
                     "Garbage: ",
@@ -211,18 +207,19 @@ console.log("super consume", array_buf);
         var new_header_and_crc = Zmodem.Header.parse(this._input_buffer);
         if (!new_header_and_crc) return;
 
+        this._throw_away_garbage_until_next_header = false;
+
+        //console.log("RECEIVED HEADER", new_header_and_crc[0]);
+
         this._consume_header(new_header_and_crc[0]);
 
         this._last_header_name = new_header_and_crc[0].NAME;
         this._last_header_crc = new_header_and_crc[1];
 
-        console.log("RECEIVED HEADER", new_header_and_crc[0]);
-
         return new_header_and_crc[0];
     }
 
     _consume_header(new_header) {
-console.log("CONSUMING", new_header);
         this._on_receive(new_header);
 
         var handler = this._next_header_handler[ new_header.NAME ];
@@ -380,8 +377,6 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         //session ends.
         this._bytes_being_consumed = array_buf;
 
-console.log("RECEIVER CONSUMING");
-
         super.consume(array_buf);
     }
 
@@ -426,7 +421,6 @@ console.log("RECEIVER CONSUMING");
     }
 
     _consume_first() {
-console.log("receiver _consume_first");
         if (this._got_ZFIN) {
             if (this._input_buffer.length < 2) return;
 
@@ -446,17 +440,14 @@ console.log("receiver _consume_first");
             }
         }
 
-console.log("buffer", this._input_buffer.join());
-console.log("expect data?", this._expect_data);
         var parsed;
         do {
-            if (this._expect_data) {
+            if (this._next_subpacket_handler) {
                 parsed = this._parse_and_consume_subpacket();
             }
             else {
                 parsed = this._parse_and_consume_header();
             }
-console.log("parsed and consumed", parsed);
         } while (parsed && this._input_buffer.length);
     }
 
@@ -558,10 +549,8 @@ console.log("parsed and consumed", parsed);
         return new Promise( function(res) {
             var between_files_handler = {
                 ZFILE: function(hdr) {
-                    this._consume_ZFILE(hdr);
-                    this._expect_data = true;
                     this._next_subpacket_handler = function(subpacket) {
-                        this._expect_data = false;
+                        this._next_subpacket_handler = null;
                         this._consume_ZFILE_data(subpacket);
                         this._Happen("offer", this._current_transfer);
                         res(this._current_transfer);
@@ -571,20 +560,16 @@ console.log("parsed and consumed", parsed);
                 //We use this as a keep-alive. Maybe other
                 //implementations do, too?
                 ZSINIT: function(hdr) {
-console.log("handling ZSINIT between files");
                     //The content of this header doesn’t affect us
                     //since all it does is tell us details of how
                     //the sender will ZDLE-encode binary data. Our
                     //ZDLE parser doesn’t need to know in advance.
 
-                    sess._expect_data = true;
                     sess._next_subpacket_handler = function(spkt) {
-console.log("handling ZSINIT subpacket");
-                        sess._expect_data = false;
+                        sess._next_subpacket_handler = null;
                         sess._consume_ZSINIT_data(spkt);
                         sess._send_header('ZACK');
                         sess._next_header_handler = between_files_handler;
-console.log("sent ZACK");
                     };
                 },
 
@@ -635,14 +620,12 @@ console.log("sent ZACK");
 
             sess._next_header_handler = {
                 ZDATA: function on_ZDATA(hdr) {
-                    this._expect_data = true;
                     this._consume_ZDATA(hdr);
 
                     this._next_subpacket_handler = this._consume_ZDATA_data;
 
                     this._next_header_handler = {
                         ZEOF: function on_ZEOF(hdr) {
-                            this._expect_data = false;
                             this._next_subpacket_handler = null;
                             this._consume_ZEOF(hdr);
 
@@ -659,15 +642,25 @@ console.log("sent ZACK");
         return ret;
     }
     _skip() {
+        var ret = this._make_promise_for_between_files();
+
+        if (this._accepted_offer) {
+
+            //Treat anything prior to a header as garbage.
+            this._next_subpacket_handler = null;
+
+            //Throw away the garbage.
+            this._throw_away_garbage_until_next_header = true;
+
+            //Ignore these.
+            this._next_header_handler.ZDATA = this._make_promise_for_between_files.bind(this);
+        }
+
         this._accepted_offer = false;
-        //this._expect_data = false;
 
         this._file_info = null;
 
-        var ret = this._make_promise_for_between_files();
-
         this._send_header( "ZSKIP" );
-console.log("sent skip header");
 
         return ret;
     }
@@ -696,17 +689,9 @@ console.log("sent skip header");
         this._current_transfer = null;
     }
 
-    _consume_ZFILE(header) {
-        this._expect_data = true;
-
-        //TODO: See about accepting any of the special ZFILE flags
-        //like line-end transformations and file replacement requests.
-    }
-
     _consume_ZDATA(header) {
         if ( this._file_offset === header.get_offset() ) {
             this._offset_ok = true;
-            this._expect_data = true;
         }
         else {
             throw "Error correction is unimplemented.";
@@ -958,7 +943,6 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
 
         //this._send_data( this._get_attn(), "end_ack" );
         this._build_and_send_subpacket( [0], "end_ack" );
-console.log("SENDER SENT ZSINIT SUBPACKET");
     }
 
     _get_attn() {
@@ -1015,11 +999,9 @@ console.log("SENDER SENT ZSINIT SUBPACKET");
             promise = new Promise( function(res) {
                 sess._next_header_handler = {
                     ZACK: (hdr) => {
-                        console.log("SENDER GOT ZACK", hdr);
                         res();
                     },
                 };
-console.log("=== sending ZSINIT");
                 sess._send_ZSINIT();
             } );
         }

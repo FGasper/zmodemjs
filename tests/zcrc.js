@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+"use strict";
+
 var tape = require('tape');
 
 global.Zmodem = require('../zmodem');
