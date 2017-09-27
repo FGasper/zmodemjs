@@ -7,4 +7,4 @@ node_js:
 before_install:
   - npm install tape
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install lrzsz; fi
-  - if [ $TRAVIS_OS_NAME = osx ]; then sudo brew install lrzsz; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew install lrzsz; fi
