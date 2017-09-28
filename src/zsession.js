@@ -1037,16 +1037,6 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         );
     }
 
-    _get_attn() {
-        if (!this._attn) {
-            //var octets = Zmodem.ZMLIB.get_random_octets( 31 );
-            var octets = new Array(31);
-            octets.fill( 42, 0, octets.length );
-            this._attn = octets.concat( [0] );
-        }
-        return this._attn;
-    }
-
     _consume_ZRINIT(hdr) {
         this._last_ZRINIT = hdr;
 
