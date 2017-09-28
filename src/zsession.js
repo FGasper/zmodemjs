@@ -22,6 +22,11 @@ const
     //which results in transmission errors.
     FORCE_ESCAPE_CTRL_CHARS = true,
 
+    //By default, we spool each payload as a Uint8Array.
+    //This makes for an easy transition to a Blob, which browsers
+    //can then use to download the file to disk.
+    DEFAULT_RECEIVE_INPUT_MODE = "spool_uint8array",
+
     //pertinent to ZMODEM
     MAX_CHUNK_LENGTH = 8192,    //1 KiB officially, but lrzsz allows 8192
     BS = 0x8,
@@ -791,16 +796,53 @@ class ZmodemOffer extends _Eventer {
 
         this._Add_event("input");
         this._Add_event("complete");
-
-        var xfer = this;
-        this.on("input", function(payload) {
-            this._file_offset += payload.length;
-        } );
     }
 
-    accept(offset) {
-        this._file_offset = offset || 0;
-        return this._accept_func(offset);
+    _input_handler(payload) {
+        this._file_offset += payload.length;
+
+        if (typeof this._input_handler_mode === "function") {
+            this._input_handler_mode(payload);
+        }
+        else {
+            if (this._input_handler_mode === DEFAULT_RECEIVE_INPUT_MODE) {
+                payload = new Uint8Array(payload);
+            }
+
+            //sanity
+            else if (this._input_handler_mode !== "spool_array") {
+                throw new Error("WTF?? _input_handler_mode = " + this._input_handler_mode);
+            }
+
+            this._spool.push(payload);
+        }
+    }
+
+    get_payloads() { return this._spool }
+
+    accept(opts) {
+        if (!opts) opts = {};
+
+        this._file_offset = opts.offset || 0;
+
+        switch (opts.on_input) {
+            case null:
+            case undefined:
+            case "spool_array":
+            case DEFAULT_RECEIVE_INPUT_MODE:    //default
+                this._spool = [];
+                break;
+            default:
+                if (typeof opts.on_input !== "function") {
+                    throw "Invalid “on_input”: " + opts.on_input;
+                }
+        }
+
+        this._input_handler_mode = opts.on_input || DEFAULT_RECEIVE_INPUT_MODE;
+
+        this.on("input", this._input_handler);
+
+        return this._accept_func(this._file_offset).then( this.get_payloads.bind(this) );
     }
 }
 Object.assign( ZmodemOffer.prototype, Transfer_Offer_Mixin );

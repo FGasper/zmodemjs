@@ -27,14 +27,21 @@
                 return msg.apply(this, args_after_type);
         }
 
-        throw new Error("Unknown ZmodemError type: " + type);
+        return null;
     }
 
     Zmodem.Error = class ZmodemError extends Error {
-        constructor(type) {
+        constructor(msg_or_type) {
             super();
-            this.type = type;
-            this.message = _generate_message.apply(this, arguments);
+
+            var generated = _generate_message.apply(this, arguments);
+            if (generated) {
+                this.type = msg_or_type;
+                this.message = generated;
+            }
+            else {
+                this.message = msg_or_type;
+            }
         }
     }
 }());

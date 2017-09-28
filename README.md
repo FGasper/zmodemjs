@@ -4,33 +4,67 @@
 
 # SYNOPSIS
 
-    let zmsentry = new Zmodem.Sentry();
+    let zsentry = new Zmodem.Sentry( {
+        to_terminal(octets) { .. },  //i.e. send to the terminal
 
-    let [terminal_octets, zsession] = zmsentry.parse(input_octets);
+        sender(octets) { .. },  //i.e. send to the ZMODEM peer
 
-    if (zsession) {
-        //Set up whatever receives future input_octets to pump into
-        //zsession.
+        on_detect(detection) { .. },  //for when Sentry detects a new ZMODEM
 
-        //Tell zsession where to send its output.
-        zsession.set_sender( (octets) => { ... } );
+        on_retract() { .. },  //for when Sentry retracts a Detection
+    } );
 
-        if (zsession.type === "receive") {
-            zsession.on("offer", (offer) => { ... });
-                offer.skip();
+    //We have to configure whatever gives us new input to send that
+    //input to zsentry.
+    //
+    //EXAMPLE: From web browsers that use WebSocket …
+    //
+    ws.addEventListener("message", function(evt) {
+        zsentry.consume(evt.data);
+    } );
 
-                //...or:
+The `on_detect(detection)` function call is probably the most complex
+piece of the above; one potential implementation might look like:
 
-                offer.on("input", (bytes) => { ... });
-                offer.accept().then(() => { ... });
-            });
-            zsession.on("session_end", () => { ... });
-            zsession.start();
+    on_detect(detection) {
+
+        //Do this if we determine that what looked like a ZMODEM session
+        //is actually not meant to be ZMODEM.
+        if (no_good) {
+            detection.deny();
+            return;
+        }
+
+        zsession = detection.confirm();
+
+        if (zsession.type === "send") {
+
+            //Send a group of files, e.g., from an <input>’s “.files”.
+            //There are events you can listen for here as well,
+            //e.g., to update a progress meter.
+            Zmodem.Browser.send_files( zsession, files_obj );
         }
         else {
-            //Have the user pick some files, then:
+            zsession.on("offer", (xfer) => {
 
-            Zmodem.Browser.send_files( zsession, files, {...} ).then( ... );
+                //Do this if you don’t want the offered file.
+                if (no_good) {
+                    xfer.skip();
+                    return;
+                }
+
+                xfer.accept().then( () => {
+
+                    //Now you need some mechanism to save the file.
+                    //An example of how you can do this in a browser:
+                    Zmodem.Browser.save_to_disk(
+                        xfer.get_payloads(),
+                        xfer.get_details().name
+                    );
+                } );
+            });
+
+            zsession.start();
         }
     }
 
@@ -126,6 +160,33 @@ access—such as terminals that run in JavaScript. Now that
 terminals a reality, there is a use case for a JavaScript
 implementation of ZMODEM to allow file transfers in this context.
 
+# GENERAL FLOW OF A ZMODEM SESSION:
+
+The following is an overview of an error-free ZMODEM session.
+
+0. If you call the `sz` command (or equivalent) that command will send
+a special ZRQINIT “pre-header” to signal your terminal to be a ZMODEM
+receiver.
+
+1. The receiver sends a ZRINIT header.
+
+2. The sender sends a ZFILE header along with information about the file
+and, optionally, the rest of the intended batch of files.
+
+3. The recipient either accepts the file or skips it.
+
+4. If the recipient did not skip the file, then the sender sends the file
+contents. At the end the sender sends a ZEOF header to let the recipient
+know this file is done.
+
+5. The recipient sends another ZRINIT header.
+
+6. Repeat steps 2-5 until the sender has no more files to send.
+
+7. Once the sender has no more files to send, the sender sends a ZEOF header,
+which the recipient echoes back. The sender closes the session by sending
+`OO` (“over and out”).
+
 # PROTOCOL NOTES AND ASSUMPTIONS
 
 Here are some notes about this particular implementation.
@@ -166,11 +227,6 @@ because they happen between ZMODEM headers; however, it’s possible to
 “poison” such messages, e.g., by sending a file whose name includes a
 ZMODEM header. That’s not a normal circumstance, though.
 
-* lrzsz has a [buffer overflow bug](https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch) that makes the terminal go a bit wonky if you try to abort
-a session while receiving a file. There’s not much that can be done about
-this since lrzsz is basically unmaintained. (Its last update was almost
-20 years ago as of this writing.)
-
 # IMPLEMENTATION NOTES
 
 * I’ve had success integrating zmodem.js with
@@ -178,8 +234,8 @@ this since lrzsz is basically unmaintained. (Its last update was almost
 
 * ZMODEM is a _binary_ protocol. (There was an extension planned
 to escape everything down to 7-bit ASCII, but it doesn’t seem to have
-been implemented?) Hence, if you’re using WebSocket, you’ll need to
-send and receive binary messages, not text.
+been implemented?) Hence, **if you use WebSocket, you’ll need to use
+binary messages, not text**.
 
 * lrzsz is the only widely-distributed ZMODEM implementation nowadays,
 which makes it a de facto standard in its
@@ -196,6 +252,10 @@ That header
 will include some form of line break; from `lrzsz` that means bytes 0x0d
 and 0x8a (not 0x0a). Your terminal might react oddly to that; if it does,
 try stripping out one or the other line ending character.
+
+* There is an unfortunate buffer overflow bug that rears its head when
+you try to abort a ZMODEM session in the middle of a file transfer. There’s
+not much to be done about this except distribute [the patch](https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch) as widely as is feasible.
 
 # PROTOCOL CHOICE
 

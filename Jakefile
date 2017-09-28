@@ -18,14 +18,6 @@ var SOURCES = [
 
 var BROWSER_SOURCES = SOURCES.slice(0).concat( ["zbrowser"] );
 
-/*
-[ SOURCES, BROWSER_SOURCES ].forEach( (list) => {
-    list.forEach( (file, i) => {
-        list[i] = `src/${file}.js`
-    } );
-} );
-*/
-
 const nameroot_sources = new Map( [
     [ "zmodem-pure", SOURCES ],
     [ "zmodem", BROWSER_SOURCES ],
