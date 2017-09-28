@@ -1202,7 +1202,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
             - ASSUME the receiver can overlap I/O (CANOVIO)
                 (so fail if !CANFDX || !CANOVIO)
             - Sender opens the firehose … all ZCRCG (!end/!ack)
-                until the end, when we send a ZCRCW (end/ack)
+                until the end, when we send a ZCRCE (end/!ack)
                 NB: try 8k/32k/64k chunk sizes? Looks like there’s
                 no need to change the packet otherwise.
     */
@@ -1228,7 +1228,8 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         this._ensure_we_are_sending();
 
         //Is the frame-end-ness of this last packet redundant
-        //with the ZEOF packet??
+        //with the ZEOF packet?? - No. It signals the receiver that
+        //the next thing to expect is a header, not a packet.
 
         //no-ack, following lrzsz’s example
         this._send_file_part(bytes_obj, "end_no_ack");
