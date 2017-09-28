@@ -21,20 +21,11 @@ var helper = require('./lib/testhelp');
 Object.assign(
     global,
     {
-        Zmodem: require('../zmodem'),
         TextDecoder: require('text-encoding').TextDecoder,
     }
 );
 
-require('../encode');
-require('../zerror');
-require('../zmlib');
-require('../zcrc');
-require('../zdle');
-require('../zheader');
-require('../zsubpacket');
-require('../zsession');
-require('../zsentry');
+var Zmodem = require('../zmodem');
 
 function _make_temp_file() {
     var tmpobj = tmp.fileSync();

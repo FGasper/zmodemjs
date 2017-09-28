@@ -6,14 +6,7 @@ var tape = require('tape');
 
 var testhelp = require('./lib/testhelp');
 
-global.Zmodem = require('../zmodem');
-
-require('../encode');
-require('../zcrc');
-require('../zmlib');
-require('../zdle');
-
-require('../zheader');
+var Zmodem = require('../zmodem');
 
 var zdle = new Zmodem.ZDLE( { escape_ctrl_chars: true } );
 

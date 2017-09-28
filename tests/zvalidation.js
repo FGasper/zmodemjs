@@ -4,10 +4,7 @@
 
 var tape = require('tape');
 
-global.Zmodem = require('../zmodem');
-
-require('../zerror');
-require('../zvalidation');
+var Zmodem = require('../zmodem');
 
 var zcrc = Zmodem.CRC;
 

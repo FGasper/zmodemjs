@@ -1,3 +1,4 @@
 .*.sw?
 zmodem.js
-zmodem-min.js
+zmodem-pure.js
+zmodem*-min.js

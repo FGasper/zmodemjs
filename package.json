@@ -7,6 +7,7 @@
     "babel-minify": "^0.2.0",
     "blue-tape": "^1.0.0",
     "concat": "^1.0.3",
+    "jake": "^8.0.15",
     "tape": "*",
     "text-encoding": "^0.6.4",
     "tmp": "0.0.33",
@@ -20,8 +21,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "tape ./tests/*.js",
-    "preinstall": "node build/compile.js"
+    "test": "jake; tape ./tests/*.js",
+    "preinstall": "jake"
   },
   "repository": {
     "type": "git",

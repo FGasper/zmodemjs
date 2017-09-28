@@ -13,17 +13,7 @@ const test = _test(tape) // decorate tape
 
 var helper = require('./lib/testhelp');
 
-global.Zmodem = require('../zmodem');
-
-require('../encode');
-require('../zerror');
-require('../zmlib');
-require('../zcrc');
-require('../zdle');
-require('../zheader');
-require('../zsubpacket');
-require('../zvalidation');
-require('../zsession');
+var Zmodem = require('../zmodem');
 
 global.TextEncoder = require('text-encoding').TextEncoder;
 global.TextDecoder = require('text-encoding').TextDecoder;

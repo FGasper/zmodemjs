@@ -4,10 +4,7 @@
 
 var tape = require('tape');
 
-global.Zmodem = require('../zmodem');
-
-require('../zmlib');
-require('../zdle');
+var Zmodem = require('../zmodem');
 
 var zmlib = Zmodem.ZMLIB;
 var ZDLE = Zmodem.ZDLE;
