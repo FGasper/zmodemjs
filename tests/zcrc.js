@@ -7,6 +7,7 @@ var tape = require('tape');
 global.Zmodem = require('../zmodem');
 
 require('../encode');
+require('../zerror');
 require('../zcrc');
 
 var zcrc = Zmodem.CRC;
@@ -33,10 +34,23 @@ tape('verify16', function(t) {
         'verify16 - no throw on good'
     );
 
-    t.throws(
-        () => zcrc.verify16( [ 0x0d, 0x0a ], [ 0xd7, 16 ] ),
-        /215,22.*215,16/,
-        'verify16 - throw on bad'
+    var err;
+    try { zcrc.verify16( [ 0x0d, 0x0a ], [ 0xd7, 16 ] ) }
+    catch(e) { err = e };
+
+    t.ok(
+        /215,16.*215,22/.test(err.message),
+        'verify16 - throw on bad (message)'
+    );
+
+    t.ok(
+        err instanceof Zmodem.Error,
+        'verify16 - typed error'
+    );
+
+    t.ok(
+        err.type,
+        'verify16 - error type'
     );
 
     t.end();
@@ -70,10 +84,23 @@ tape('verify32', function(t) {
         'verify32 - no throw on good'
     );
 
-    t.throws(
-        () => zcrc.verify32( [ 4, 0, 0, 0, 0 ], [ 1,2,3,4 ] ),
-        /221,81,162,51.*1,2,3,4/,
-        'verify32 - throw on bad'
+    var err;
+    try { zcrc.verify32( [ 4, 0, 0, 0, 0 ], [ 1,2,3,4 ] ) }
+    catch(e) { err = e };
+
+    t.ok(
+        /1,2,3,4.*221,81,162,51/.test(err.message),
+        'verify32 - throw on bad (message)'
+    );
+
+    t.ok(
+        err instanceof Zmodem.Error,
+        'verify32 - typed error'
+    );
+
+    t.ok(
+        err.type,
+        'verify32 - error type'
     );
 
     t.end();

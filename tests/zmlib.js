@@ -18,8 +18,8 @@ tape('constants', function(t) {
 } );
 
 tape('strip_ignored_bytes', function(t) {
-    var input = [ zmlib.XOFF, 12, 45, 76, zmlib.XON, 22, zmlib.XOFF, 32, zmlib.XON | 0x80, 00, zmlib.XOFF | 0x80, 255, zmlib.XON ];
-    var should_be = [ 12, 45, 76, 22, 32, 00, 255 ];
+    var input = [ zmlib.XOFF, 12, 45, 76, zmlib.XON, 22, zmlib.XOFF, 32, zmlib.XON | 0x80, 0, zmlib.XOFF | 0x80, 255, zmlib.XON ];
+    var should_be = [ 12, 45, 76, 22, 32, 0, 255 ];
 
     var input_copy = input.slice(0);
 

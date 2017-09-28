@@ -7,11 +7,14 @@
         return "CRC check failed! (got: " + got.join() + "; expected: " + expected.join() + ")";
     }
 
+    function _pass(val) { return val }
+
     const TYPE_MESSAGE = {
         aborted: "Session aborted",
         peer_aborted: "Peer aborted session",
         already_aborted: "Session already aborted",
         crc: _crc_message,
+        validation: _pass,
     };
 
     function _generate_message(type) {

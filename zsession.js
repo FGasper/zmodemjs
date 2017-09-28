@@ -488,13 +488,13 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
 
         this._file_info = {
             name: fname,
-            size: the_rest[0] && parseInt( the_rest[0], 10 ),
-            mtime: mtime,
-            mode: the_rest[2] && parseInt( the_rest[2], 8 ) || undefined,
-            serial: the_rest[3] && parseInt( the_rest[3], 10 ) || undefined,
+            size: the_rest[0] ? parseInt( the_rest[0], 10 ) : null,
+            mtime: mtime || null,
+            mode: the_rest[2] && parseInt( the_rest[2], 8 ) || null,
+            serial: the_rest[3] && parseInt( the_rest[3], 10 ) || null,
 
-            files_remaining: the_rest[4] && parseInt( the_rest[4], 10 ),
-            bytes_remaining: the_rest[5] && parseInt( the_rest[5], 10 ),
+            files_remaining: the_rest[4] ? parseInt( the_rest[4], 10 ) : null,
+            bytes_remaining: the_rest[5] ? parseInt( the_rest[5], 10 ) : null,
         };
 
         var xfer = new ZmodemOffer(
@@ -739,7 +739,7 @@ Object.assign(
 
 var Transfer_Offer_Mixin = {
     get_details() {
-        return JSON.parse( JSON.stringify( this._file_info ) );
+        return Object.assign( {}, this._file_info );
     },
 
     get_offset() { return this._file_offset }
@@ -811,21 +811,6 @@ const SENDER_BINARY_HEADER = {
     ZFILE: true,
     ZDATA: true,
 };
-
-const LOOKS_LIKE_ZMODEM_HEADER = /\*\x18[AC]|\*\*\x18B/;
-
-function _validate_offer_params(params) {
-    if (!params.name) throw "need “name”!";
-
-    if (LOOKS_LIKE_ZMODEM_HEADER.test(params.name)) {
-        console.warn("The filename " + JSON.stringify(name) + " contains characters that look like a ZMODEM header. This could corrupt the ZMODEM session; consider renaming it without control characters.");
-    }
-
-    //Ensure we don’t skip any fields
-    //Ensure types are correct
-    //TODO: Move the ZFILE subpacket payload creation logic
-    //into this function.
-}
 
 Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     constructor(zrinit_hdr) {
@@ -1022,7 +1007,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     send_offer(params) {
         if (!params) throw "need file params!";
 
-        _validate_offer_params(params);
+        params = Zmodem.Validation.offer_parameters(params);
 
         if (this._sending_file) throw "Already sending file!";
 
@@ -1055,16 +1040,10 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
 
         return first_promise.then( function() {
 
-            //TODO: Might as well combine these together?
-            sess._send_header( "ZFILE" );
-            sess._build_and_send_subpacket( payload_array, "end_ack" );
-
-            delete sess._sent_ZDATA;
-
             //return Promise object that is fulfilled when the ZRPOS or ZSKIP arrives.
             //The promise value is the byte offset, or undefined for ZSKIP.
             //If ZRPOS arrives, then send ZDATA(0) and set this._sending_file.
-            return new Promise( function(res) {
+            var handler_setter_promise = new Promise( function(res) {
                 sess._next_header_handler = {
                     ZSKIP: function() {
                         sess._start_keepalive();
@@ -1083,6 +1062,14 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
                     },
                 };
             } );
+
+            //TODO: Might as well combine these together?
+            sess._send_header( "ZFILE" );
+            sess._build_and_send_subpacket( payload_array, "end_ack" );
+
+            delete sess._sent_ZDATA;
+
+            return handler_setter_promise;
         } );
     }
 
