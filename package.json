@@ -4,17 +4,24 @@
   "description": "ZMODEM file transfers in JavaScript",
   "main": "zmodem.js",
   "devDependencies": {
+    "babel-minify": "^0.2.0",
     "blue-tape": "^1.0.0",
+    "concat": "^1.0.3",
     "tape": "*",
     "text-encoding": "^0.6.4",
     "tmp": "0.0.33",
     "which": "^1.3.0"
   },
+  "files": [
+    "zmodem.js",
+    "zmodem-min.js"
+  ],
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "test": "tape ./tests/*.js"
+    "test": "tape ./tests/*.js",
+    "preinstall": "node build/compile.js"
   },
   "repository": {
     "type": "git",

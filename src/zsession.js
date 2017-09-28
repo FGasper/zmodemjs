@@ -539,14 +539,13 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             return;
         }
 
-        try {
-            this._on_data_in(subpacket);
-            this._file_offset += subpacket.get_payload().length;
-        }
-        catch(e) {
-            console.warn("received error from data_in callback; retrying", e);
-            throw "unimplemented";
-        }
+        this._on_data_in(subpacket);
+        this._file_offset += subpacket.get_payload().length;
+
+        /*
+        console.warn("received error from data_in callback; retrying", e);
+        throw "unimplemented";
+        */
 
         if (subpacket.ack_expected() && !subpacket.frame_end()) {
             this._send_header( "ZACK", Zmodem.ENCODELIB.pack_u32_le(this._file_offset) );

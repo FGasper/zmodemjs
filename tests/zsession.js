@@ -16,6 +16,7 @@ var helper = require('./lib/testhelp');
 global.Zmodem = require('../zmodem');
 
 require('../encode');
+require('../zerror');
 require('../zmlib');
 require('../zcrc');
 require('../zdle');
@@ -182,8 +183,8 @@ test('skip one, receive the next', (t) => {
     } );
 
     var s_pms = sender.send_offer(
-        { name: "my file",
-    } ).then(
+        { name: "my file" }
+    ).then(
         (sender_xfer) => {
             t.ok( !sender_xfer, "skip() -> sender sees no transfer object" );
             return sender.send_offer( { name: "file 2" } );
@@ -196,4 +197,45 @@ test('skip one, receive the next', (t) => {
     );
 
     return Promise.all( [ r_pms, s_pms ] );
+} );
+
+test('abort mid-download', (t) => {
+    _init();
+
+    var transferred_bytes = [];
+
+    var aborted;
+
+    var r_pms = receiver.start().then( (offer) => {
+        offer.on("input", (payload) => {
+            [].push.apply(transferred_bytes, payload);
+
+            if (aborted) throw "already aborted!";
+            aborted = true;
+
+            receiver.abort();
+        });
+        return offer.accept();
+    } );
+
+    var s_pms = sender.send_offer(
+        { name: "my file" }
+    ).then(
+        (xfer) => {
+            xfer.send( [1, 2, 3] );
+            xfer.end( [99, 99, 99] );   //should never get here
+        }
+    );
+
+    return Promise.all( [r_pms, s_pms] ).catch(
+        (err) => {
+            t.ok( err.message.match('abort'), 'error message is about abort' );
+        }
+    ).then( () => {
+        t.deepEquals(
+            transferred_bytes,
+            [1, 2, 3],
+            'abort() stopped us from sending more',
+        );
+    } );
 } );
