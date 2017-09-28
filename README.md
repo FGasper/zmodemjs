@@ -225,7 +225,7 @@ actual ZMODEM—for example, if you skip an offered file, `sz` will write a
 message about it to the console. For the most part we can accommodate these
 because they happen between ZMODEM headers; however, it’s possible to
 “poison” such messages, e.g., by sending a file whose name includes a
-ZMODEM header. That’s not a normal circumstance, though.
+ZMODEM header. So don’t do that. :-P
 
 # IMPLEMENTATION NOTES
 

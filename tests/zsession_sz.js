@@ -2,7 +2,6 @@
 
 "use strict";
 
-const fs = require('fs');
 const tape = require('blue-tape');
 
 const SZ_PATH = require('which').sync('sz', {nothrow: true});
@@ -13,7 +12,6 @@ if (!SZ_PATH) {
     });
 }
 
-const tmp = require('tmp');
 const spawn = require('child_process').spawn;
 
 var helper = require('./lib/testhelp');
@@ -21,76 +19,15 @@ var helper = require('./lib/testhelp');
 Object.assign(
     global,
     {
+        Zmodem: require('./lib/zmodem'),
         TextDecoder: require('text-encoding').TextDecoder,
     }
 );
 
-global.Zmodem = require('./lib/zmodem');
-
-function _make_temp_file() {
-    var tmpobj = tmp.fileSync();
-    for (let i of [ ... Array(500000) ]) {
-        fs.writeSync( tmpobj.fd, "0123456789" );
-    }
-    fs.writeSync( tmpobj.fd, "=THE_END" );
-    fs.closeSync( tmpobj.fd );
-
-    return tmpobj.name;
-}
-
-var FILE1 = _make_temp_file();
+var FILE1 = helper.make_temp_file(10 * 1024 * 1024);    //10 MiB
 
 function _test_steps(t, sz_args, steps) {
-    var child;
-
-    var zsession;
-    var zsentry = new Zmodem.Sentry( {
-        to_terminal: Object,
-        on_detect: (d) => { zsession = d.confirm() },
-        on_retract: console.error.bind(console),
-        sender: (d) => {
-            child.stdin.write( new Buffer(d) );
-        },
-    } );
-
-    var step = 0;
-    var inputs = [];
-
-    child = spawn(SZ_PATH, sz_args);
-    child.on("error", console.error.bind(console));
-
-    //We can’t just pipe this on through because there can be lone CR
-    //bytes which screw up TAP::Harness.
-    child.stderr.on("data", (d) => {
-        process.stderr.write( d.toString().replace(/\r/g, "\n") );
-    });
-
-    child.stdout.on("data", (d) => {
-        //console.log("STDOUT from child", d);
-        inputs.push( Array.from(d) );
-
-        zsentry.consume( Array.from(d) );
-
-        if (zsession) {
-            if ( steps[step] ) {
-                if ( steps[step](zsession, child) ) {
-                    step++;
-                }
-            }
-            else {
-                child.stdin.end();
-            }
-        }
-    });
-
-    var exit_promise = new Promise( (res, rej) => {
-        child.on("exit", (code, signal) => {
-            console.log(`# "${SZ_PATH}" exit: code ${code}, signal ${signal}`);
-            res([code, signal]);
-        } );
-    } );
-
-    return exit_promise.then( () => { return inputs } );
+    return helper.exec_lrzsz_steps( t, SZ_PATH, sz_args, steps );
 }
 
 tape('abort() after ZRQINIT', (t) => {
@@ -166,7 +103,7 @@ tape('abort() during download', { timeout: 30000 }, (t) => {
 //  https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch
 //
 tape.skip('skip() during download', { timeout: 30000 }, (t) => {
-    var filenames = [FILE1, _make_temp_file()];
+    var filenames = [FILE1, helper.make_temp_file(12345678)];
     //filenames = ["-vvvvvvvvvvvvv", FILE1, _make_temp_file()];
 
     var started, second_offer;
