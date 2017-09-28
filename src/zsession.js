@@ -761,6 +761,12 @@ var Transfer_Offer_Mixin = {
     get_offset() { return this._file_offset }
 };
 
+/**
+ * A class to represent a sender’s interaction with a single file
+ * transfer within a batch. When a receiver accepts an offer, the
+ * Session instantiates this class and passes the instance as the
+ * promise resolution from send_offer().
+ */
 class ZmodemTransfer {
     constructor(file_info, offset, send_func, end_func) {
         this._file_info = file_info;
@@ -770,13 +776,28 @@ class ZmodemTransfer {
         this._end = end_func;
     }
 
+    /**
+     * Send a (non-terminal) piece of the file.
+     *
+     * @method send()
+     * @param { Array | Uint8Array } The bytes to send
+     */
     send(array_like) {
         var ret = this._send(array_like);
         this._file_offset += array_like.length;
         return ret;
     }
 
-    //Argument is optional.
+    /**
+     * Complete the file transfer.
+     *
+     * @method send()
+     *
+     * @param { Array | Uint8Array } OPTIONAL: The last bytes to send.
+     *
+     * @return { Promise } Resolves when the receiver has indicated
+     *      acceptance of the end of the file transfer.
+     */
     end(array_like) {
         var ret = this._end(array_like || []);
         if (array_like) this._file_offset += array_like.length;
@@ -846,18 +867,6 @@ class ZmodemOffer extends _Eventer {
     }
 }
 Object.assign( ZmodemOffer.prototype, Transfer_Offer_Mixin );
-
-/*
-function _throw_if_not_number(value, name) {
-    if (typeof value !== "number") {
-        if (name) {
-            throw( "“" + name + "” must be a number!" );
-        }
-
-        throw "must be a number!";
-    }
-}
-*/
 
 //Curious that ZSINIT isn’t here … but, lsz sends it as hex.
 const SENDER_BINARY_HEADER = {
@@ -1032,9 +1041,9 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     }
 
     //https://stackoverflow.com/questions/23155939/missing-0xf-and-0x16-when-binary-data-through-virtual-serial-port-pair-created-b
-    //^^ Because of that, we always have to escape control characters.
-    //It’s arguably a bug in lrzsz, but at this point lrzsz is basically
-    //both unmaintained and the de facto standard. :-(
+    //^^ Because of that, we always escape control characters.
+    //The alternative would be that lrz would never receive those
+    //two bytes from zmodem.js.
     _ensure_receiver_escapes_ctrl_chars() {
         var promise;
 
