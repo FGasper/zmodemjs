@@ -63,3 +63,19 @@ tape("typed", (t) => {
 
     t.end();
 });
+
+tape("generic", (t) => {
+    let err = new Zmodem.Error("Van Gogh was a guy.");
+
+    t.ok(
+        (err instanceof Zmodem.Error),
+        `generic isa ZmodemError`
+    );
+    t.is(
+        err.message,
+        "Van Gogh was a guy.",
+        "passthrough of string"
+    );
+
+    t.end();
+});
