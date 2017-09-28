@@ -15,7 +15,9 @@
   },
   "files": [
     "zmodem.js",
-    "zmodem-min.js"
+    "zmodem-min.js",
+    "zmodem-pure.js",
+    "zmodem-pure-min.js"
   ],
   "directories": {
     "test": "tests"
