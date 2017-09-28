@@ -36,27 +36,26 @@ let TEST_STRINGS = [
     "Hi diddle-ee, dee! A sailor’s life for me!",
 ];
 
-tape("send batch", (t) => {
-    var string_num = 0;
-
-    var mtime_1990 = new Date("1990-01-01T00:00:00Z");
+function _send_batch(t, batch, on_offer) {
+    batch = batch.slice(0);
 
     return helper.exec_lrzsz_steps( t, RZ_PATH, [], [
         (zsession, child) => {
             function offer_sender() {
-                if (string_num >= TEST_STRINGS.length) {
+                if (!batch.length) {
                     zsession.close();
                     return;  //batch finished
                 }
 
-                let file_contents = TEST_STRINGS[string_num];
+                return zsession.send_offer(
+                    batch[0][0]
+                ).then( (xfer) => {
+                    if (on_offer) {
+                        on_offer(xfer, batch[0]);
+                    }
 
-                return zsession.send_offer( {
-                    name: "batch_" + string_num,
-                    mtime: mtime_1990,
-                } ).then( (xfer) => {
-                    string_num++;
-                    return xfer.end( helper.string_to_octets(file_contents) );
+                    let file_contents = batch.shift()[1];
+                    return xfer && xfer.end( helper.string_to_octets(file_contents) );
                 } ).then( offer_sender );
             }
 
@@ -65,11 +64,58 @@ tape("send batch", (t) => {
         (zsession, child) => {
             return zsession.has_ended();
         },
-    ] ).then( () => {
+    ] );
+}
+
+tape("rz accepts one, then skips next", (t) => {
+    let filename = "no-clobberage";
+
+    var batch = [
+        [
+            { name: filename },
+            "the first",
+        ],
+        [
+            { name: filename },
+            "the second",
+        ],
+    ];
+
+    var offers = [];
+    function offer_cb(xfer, batch_item) {
+        offers.push( xfer );
+    }
+
+    return _send_batch(t, batch, offer_cb).then( () => {
+        var got_contents = fs.readFileSync(filename, "utf-8");
+        t.equals( got_contents, "the first", 'second offer was rejected' );
+
+        t.notEquals( offers[0], undefined, 'got an offer at first' );
+        t.equals( offers[1], undefined, '… but no offer second' );
+    } );
+});
+
+tape("send batch", (t) => {
+    var string_num = 0;
+
+    var base = "batch_";
+    var mtime_1990 = new Date("1990-01-01T00:00:00Z");
+
+    var batch = TEST_STRINGS.map( (str, i) => {
+        return [
+            {
+                name: base + i,
+                mtime: mtime_1990,
+            },
+            str,
+        ];
+    } );
+
+    return _send_batch(t, batch).then( () => {
         for (var sn=0; sn < TEST_STRINGS.length; sn++) {
-            var got_contents = fs.readFileSync("batch_" + sn, "utf-8");
+            var got_contents = fs.readFileSync(base + sn, "utf-8");
             t.equals( got_contents, TEST_STRINGS[sn], `rz wrote out the file (${TEST_STRINGS[sn]})` );
-            t.equals( 0 + fs.statSync("batch_" + sn).mtime, 0 + mtime_1990, `... and observed the sent mtime` );
+            t.equals( 0 + fs.statSync(base + sn).mtime, 0 + mtime_1990, `... and observed the sent mtime` );
         }
     } );
 });
