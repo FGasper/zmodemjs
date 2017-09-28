@@ -4,16 +4,8 @@
 
 const test = require('blue-tape');
 
-/*
-const tape = require('tape')
-const _test = require('tape-promise').default // <---- notice 'default' 
-const test = _test(tape) // decorate tape 
-*/
-
-
-var helper = require('./lib/testhelp');
-
-var Zmodem = require('../zmodem');
+const helper = require('./lib/testhelp');
+global.Zmodem = require('./lib/zmodem');
 
 global.TextEncoder = require('text-encoding').TextEncoder;
 global.TextDecoder = require('text-encoding').TextDecoder;

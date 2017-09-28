@@ -6,7 +6,7 @@ var tape = require('tape');
 
 var helper = require('./lib/testhelp');
 
-var Zmodem = require('../zmodem');
+global.Zmodem = require('./lib/zmodem');
 
 var ZSentry = Zmodem.Sentry;
 

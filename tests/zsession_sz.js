@@ -25,7 +25,7 @@ Object.assign(
     }
 );
 
-var Zmodem = require('../zmodem');
+global.Zmodem = require('./lib/zmodem');
 
 function _make_temp_file() {
     var tmpobj = tmp.fileSync();

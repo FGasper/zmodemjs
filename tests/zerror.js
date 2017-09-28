@@ -2,8 +2,9 @@
 
 "use strict";
 
+global.Zmodem = require('./lib/zmodem');
+
 const tape = require('tape'),
-    Zmodem = require('../zmodem'),
     TYPE_CHECKS = {
         aborted: [ [] ],
         peer_aborted: [],

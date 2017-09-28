@@ -2,11 +2,11 @@
 
 "use strict";
 
-var tape = require('tape');
+const tape = require('tape');
 
-var Zmodem = require('../zmodem');
+global.Zmodem = require('./lib/zmodem');
 
-var zcrc = Zmodem.CRC;
+const zcrc = Zmodem.CRC;
 
 var now = new Date();
 var now_epoch = Math.floor( now.getTime() / 1000 );

@@ -23,7 +23,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "jake; tape ./tests/*.js",
+    "test": "tape ./tests/*.js",
     "prepare": "jake"
   },
   "repository": {

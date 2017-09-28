@@ -1,4 +1,4 @@
 .*.sw?
-zmodem.js
-zmodem-pure.js
-zmodem*-min.js
+/zmodem.js
+/zmodem-pure.js
+/zmodem*-min.js

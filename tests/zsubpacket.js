@@ -2,11 +2,11 @@
 
 "use strict";
 
-var tape = require('tape');
+const tape = require('tape');
 
-var testhelp = require('./lib/testhelp');
+const testhelp = require('./lib/testhelp');
 
-var Zmodem = require('../zmodem');
+global.Zmodem = require('./lib/zmodem');
 
 var zdle = new Zmodem.ZDLE( { escape_ctrl_chars: true } );
 
