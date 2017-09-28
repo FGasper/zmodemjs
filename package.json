@@ -24,7 +24,7 @@
   },
   "scripts": {
     "test": "jake; tape ./tests/*.js",
-    "preinstall": "jake"
+    "prepublish": "jake"
   },
   "repository": {
     "type": "git",
