@@ -29,6 +29,7 @@ tape('strip_ignored_bytes', function(t) {
     t.end();
 } );
 
+/*
 tape('get_random_octets', function(t) {
     t.equal(
         zmlib.get_random_octets(42).length,
@@ -49,6 +50,7 @@ tape('get_random_octets', function(t) {
 
     t.end();
 } );
+*/
 
 tape('find_subarray', function(t) {
     t.equal(

@@ -1,6 +1,28 @@
 var Zmodem = require('./zmodem');
 
 module.exports = {
+    /**
+     * Return an array with the given number of random octet values.
+     *
+     * @param {Array} count - The number of octet values to return.
+     *
+     * @returns {Array} The octet values.
+     */
+    get_random_octets(count) {
+        if (!(count > 0)) throw( "Must be positive, not " + count );
+
+        var octets = [];
+
+        //This assigns backwards both for convenience and so that
+        //the initial assignment allocates the needed size.
+        while (count) {
+            octets[count - 1] = Math.floor( Math.random() * 256 );
+            count--;
+        }
+
+        return octets;
+    },
+
     string_to_octets(string) {
         return string.split("").map( (c) => c.charCodeAt(0) );
     },

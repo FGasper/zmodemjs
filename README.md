@@ -272,6 +272,22 @@ our purpose because it doesn’t “litter” the transfer with CRCs.
 There is also [Kermit](http://www.columbia.edu/kermit/kermit.html), which
 seems to be more standardized than ZMODEM but **much** more complex.
 
+# DESIGN NOTES
+
+zmodem.js tries to avoid “useless” states:
+either we fail completely, or we succeed. To that end, some callbacks are
+required arguments (e.g., the Sentry constructor’s `to_terminal` argument),
+while others are registered separately.
+
+Likewise, for this reason some of the session-level logic is exposed only
+through the Transfer and Offer objects. The Session creates these
+internally then exposes them via callback
+
+The library’s most anticipated use case is to have ZMODEM in a browser;
+hence, the “default” `zmodem-min.js` file contains the browser-specific
+logic from the repository’s `src/zbrowser.js`. The `zmodem-pure*` files
+omit the browser logic and are recommended for non-browser environments.
+
 # SOURCES
 
 ZMODEM is not standardized in a nice, clean, official RFC like DNS or HTTP;

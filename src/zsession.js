@@ -22,9 +22,6 @@ const
     //which results in transmission errors.
     FORCE_ESCAPE_CTRL_CHARS = true,
 
-    //By default, we spool each payload as a Uint8Array.
-    //This makes for an easy transition to a Blob, which browsers
-    //can then use to download the file to disk.
     DEFAULT_RECEIVE_INPUT_MODE = "spool_uint8array",
 
     //pertinent to ZMODEM
@@ -806,6 +803,12 @@ class ZmodemTransfer {
 }
 Object.assign( ZmodemTransfer.prototype, Transfer_Offer_Mixin );
 
+/**
+ * A class to represent a receiver’s interaction with a single file
+ * transfer offer within a batch. There is functionality here to
+ * skip or accept offered files and either to spool the packet
+ * payloads or to handle them yourself.
+ */
 class ZmodemOffer extends _Eventer {
     constructor(file_info, accept_func, skip_func) {
         super();
@@ -813,34 +816,44 @@ class ZmodemOffer extends _Eventer {
         this._file_info = file_info;
 
         this._accept_func = accept_func;
-        this.skip = skip_func;
+        this._skip_func = skip_func;
 
         this._Add_event("input");
         this._Add_event("complete");
     }
 
-    _input_handler(payload) {
-        this._file_offset += payload.length;
+    /**
+     * Tell the sender that you don’t want the offered file.
+     *
+     * @return { Promise } Resolves with the next offer or with
+     *      the end of the connection.
+     */
+    skip() { return this._skip_func.apply(this, arguments) }
 
-        if (typeof this._input_handler_mode === "function") {
-            this._input_handler_mode(payload);
-        }
-        else {
-            if (this._input_handler_mode === DEFAULT_RECEIVE_INPUT_MODE) {
-                payload = new Uint8Array(payload);
-            }
-
-            //sanity
-            else if (this._input_handler_mode !== "spool_array") {
-                throw new Error("WTF?? _input_handler_mode = " + this._input_handler_mode);
-            }
-
-            this._spool.push(payload);
-        }
-    }
-
-    get_payloads() { return this._spool }
-
+    /**
+     * Tell the sender to send the offered file.
+     *
+     * @param { Object } opts - Can be:
+     *
+     *      - “on_input”: if given, can be:
+     *
+     *          - "spool_uint8array": (default) Stores the ZMODEM
+     *              packet payloads as Uint8Array instances.
+     *              This makes for an easy transition to a Blob,
+     *              which JavaScript can use to save the file to disk.
+     *
+     *          - "spool_array": Stores the ZMODEM packet payloads
+     *              as Array instances. Each value is a number.
+     *
+     *          - (function): A handler that receives each payload
+     *              as it arrives. The Offer object does not store
+     *              the payloads internally when thus configured.
+     *
+     * @return { Promise } Resolves with the next offer or with
+     *      the end of the connection. If the Offer has been spooling
+     *      the packet payloads, an Array with those payloads is given
+     *      as the promise resolution.
+     */
     accept(opts) {
         if (!opts) opts = {};
 
@@ -863,7 +876,31 @@ class ZmodemOffer extends _Eventer {
 
         this.on("input", this._input_handler);
 
-        return this._accept_func(this._file_offset).then( this.get_payloads.bind(this) );
+        return this._accept_func(this._file_offset).then( this._get_spool.bind(this) );
+    }
+
+    _input_handler(payload) {
+        this._file_offset += payload.length;
+
+        if (typeof this._input_handler_mode === "function") {
+            this._input_handler_mode(payload);
+        }
+        else {
+            if (this._input_handler_mode === DEFAULT_RECEIVE_INPUT_MODE) {
+                payload = new Uint8Array(payload);
+            }
+
+            //sanity
+            else if (this._input_handler_mode !== "spool_array") {
+                throw new Zmodem.Error("WTF?? _input_handler_mode = " + this._input_handler_mode);
+            }
+
+            this._spool.push(payload);
+        }
+    }
+
+    _get_spool() {
+        return this._spool;
     }
 }
 Object.assign( ZmodemOffer.prototype, Transfer_Offer_Mixin );

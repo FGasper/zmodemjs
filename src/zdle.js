@@ -97,7 +97,7 @@ Zmodem.ZDLE = class ZmodemZDLE {
 
             //0x40 = '@'; i.e., only escape if the last
             //octet was '@'.
-            if ((encode_todo !== 3) || ((last_code & 0x7f) === 0x40)) {
+            if ((encode_todo === 2) || ((last_code & 0x7f) === 0x40)) {
                 last_code ^= 0x40;   //0100
                 octets.splice(encode_cur, 1, ZDLE, last_code);
             }
@@ -130,10 +130,9 @@ Zmodem.ZDLE = class ZmodemZDLE {
     }
 
     /**
-     * Return a given number of ZDLE-decoded bytes from the passed-in array.
-     * If the requested number of bytes isn’t available, then the passed-in
-     * array is unmodified; otherwise, this will remove the decoded bytes
-     * from the array.
+     * Remove, ZDLE-decode, and return bytes from the passed-in array.
+     * If the requested number of ZDLE-encoded bytes isn’t available,
+     * then the passed-in array is unmodified (and the return is undefined).
      *
      * @param {Array} octets - The octet values to transform.
      *      Each array member should be an 8-bit unsigned integer (0-255).

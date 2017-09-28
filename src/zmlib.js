@@ -44,28 +44,6 @@ Zmodem.ZMLIB = (function() {
     }
 
     /**
-     * Return an array with the given number of random octet values.
-     *
-     * @param {Array} count - The number of octet values to return.
-     *
-     * @returns {Array} The octet values.
-     */
-    function get_random_octets(count) {
-        if (!(count > 0)) throw( "Must be positive, not " + count );
-
-        var octets = [];
-
-        //This assigns backwards both for convenience and so that
-        //the initial assignment allocates the needed size.
-        while (count) {
-            octets[count - 1] = Math.floor( Math.random() * 256 );
-            count--;
-        }
-
-        return octets;
-    }
-
-    /**
      * Like Array.prototype.indexOf, but searches for a subarray
      * rather than just a particular value.
      *
@@ -107,7 +85,6 @@ Zmodem.ZMLIB = (function() {
         XOFF: XOFF,
         ABORT_SEQUENCE: ABORT_SEQUENCE,
         strip_ignored_bytes:    strip_ignored_bytes,
-        get_random_octets:      get_random_octets,
         find_subarray:          find_subarray,
     };
 }());
