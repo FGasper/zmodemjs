@@ -97,7 +97,7 @@ function _init(async) {
 test('receive one, promises', (t) => {
     _init();
 
-    receiver.start().then( (offer) => {
+    var r_pms = receiver.start().then( (offer) => {
         t.deepEquals(
             offer.get_details(),
             {
@@ -112,16 +112,20 @@ test('receive one, promises', (t) => {
             'get_details() returns expected values'
         );
 
-        offer.accept();
+        return offer.accept();
     } );
 
-    var offer_promise = sender.send_offer( { name: "my file", size: 32 } );
+    //r_pms.then( () => { console.log("RECEIVER DONE") } );
 
-    return offer_promise.then( (sender_xfer) => {
+    var s_pms = sender.send_offer(
+        { name: "my file", size: 32 }
+    ).then( (sender_xfer) => {
         sender_xfer.end( [12, 23, 34] ).then( () => {
-            sender.close();
+            return sender.close();
         } );
     } );
+
+    return Promise.all( [ r_pms, s_pms ] );
 } );
 
 test('receive one, events', (t) => {

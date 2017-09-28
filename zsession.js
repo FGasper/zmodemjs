@@ -263,15 +263,25 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
 
         var args = Array.apply( null, arguments );
 
-        var hdr = Zmodem.Header.build.apply( Zmodem.Header, args );
+        var bytes_hdr = this._create_header_bytes(args);
+
+        this._sender(bytes_hdr[0]);
+
+        this._last_sent_header = bytes_hdr[1];
+    }
+
+    _create_header_bytes(name_and_args) {
+
+        var hdr = Zmodem.Header.build.apply( Zmodem.Header, name_and_args );
 
         //console.log( this.type, "SENDING HEADER", hdr );
 
-        var formatter = this._get_header_formatter(name);
+        var formatter = this._get_header_formatter(name_and_args[0]);
 
-        this._sender( hdr[formatter](this._zencoder) );
-
-        this._last_sent_header = hdr;
+        return [
+            hdr[formatter](this._zencoder),
+            hdr
+        ];
     }
 
     _strip_and_enqueue_input(input) {
@@ -409,12 +419,14 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         //console.log("RECEIVED SUBPACKET", subpacket);
 
         if (subpacket) {
+            this._consume_data(subpacket);
 
             //What state are we in if the subpacket indicates frame end
             //but we haven’t gotten ZEOF yet? Can anything other than ZEOF
             //follow after a ZDATA?
-            this._expect_data = !subpacket.frame_end();
-            this._consume_data(subpacket);
+            if (subpacket.frame_end()) {
+                this._next_subpacket_handler = null;
+            }
         }
 
         return subpacket;
@@ -455,7 +467,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         this._on_receive(subpacket);
 
         if (!this._next_subpacket_handler) {
-            throw( "PROTOCOL: Received unexpected data packet after " + this._last_header_name + " header" );
+            throw( "PROTOCOL: Received unexpected data packet after " + this._last_header_name + " header: " + subpacket.get_payload().join() );
         }
 
         this._next_subpacket_handler.call(this, subpacket);
@@ -931,10 +943,11 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
             zsinit_flags.push("ESCCTL");
         }
 
-        this._send_header("ZSINIT", zsinit_flags);
-
-        //this._send_data( this._get_attn(), "end_ack" );
-        this._build_and_send_subpacket( [0], "end_ack" );
+        this._send_header_and_data(
+            ["ZSINIT", zsinit_flags],
+            [0],
+            "end_ack"
+        );
     }
 
     _get_attn() {
@@ -1063,9 +1076,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
                 };
             } );
 
-            //TODO: Might as well combine these together?
-            sess._send_header( "ZFILE" );
-            sess._build_and_send_subpacket( payload_array, "end_ack" );
+            sess._send_header_and_data( ["ZFILE"], payload_array, "end_ack" );
 
             delete sess._sent_ZDATA;
 
@@ -1073,10 +1084,26 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         } );
     }
 
-    _build_and_send_subpacket( bytes_arr, frameend ) {
+    _send_header_and_data( hdr_name_and_args, data_arr, frameend ) {
+        var bytes_hdr = this._create_header_bytes(hdr_name_and_args);
+
+        var data_bytes = this._build_subpacket_bytes(data_arr, frameend);
+
+        bytes_hdr[0].push.apply( bytes_hdr[0], data_bytes );
+
+        this._sender( bytes_hdr[0] );
+
+        this._last_sent_header = bytes_hdr[1];
+    }
+
+    _build_subpacket_bytes( bytes_arr, frameend ) {
         var subpacket = Zmodem.Subpacket.build(bytes_arr, frameend);
 
-        this._sender( subpacket[this._subpacket_encode_func]( this._zencoder ) );
+        return subpacket[this._subpacket_encode_func]( this._zencoder );
+    }
+
+    _build_and_send_subpacket( bytes_arr, frameend ) {
+        this._sender( this._build_subpacket_bytes(bytes_arr, frameend) );
     }
 
     _string_to_octets(string) {
