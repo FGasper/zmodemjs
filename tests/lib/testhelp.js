@@ -1,10 +1,8 @@
 var Zmodem = require('./zmodem');
 
-var utf8enc = require('text-encoding');
-
 module.exports = {
     string_to_octets(string) {
-        return Array.from( new utf8enc.TextEncoder().encode(string) );
+        return string.split("").map( (c) => c.charCodeAt(0) );
     },
 
     make_temp_dir() {

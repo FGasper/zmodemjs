@@ -31,10 +31,13 @@ let TEST_STRINGS = [
     "123",
     "\x00",
     "\x18",
-    "\x18\x18\x18\x18\x18",
+    "\x18\x18\x18\x18\x18", //invalid as UTF-8
+    "\x8a\x9a\xff\xfe",     //invalid as UTF-8
     "épée",
     "Hi diddle-ee, dee! A sailor’s life for me!",
 ];
+
+const text_encoder = new TextEncoder();
 
 function _send_batch(t, batch, on_offer) {
     batch = batch.slice(0);
@@ -55,7 +58,7 @@ function _send_batch(t, batch, on_offer) {
                     }
 
                     let file_contents = batch.shift()[1];
-                    return xfer && xfer.end( helper.string_to_octets(file_contents) );
+                    return xfer && xfer.end( Array.from( text_encoder.encode(file_contents) ) );
                 } ).then( offer_sender );
             }
 
@@ -114,7 +117,7 @@ tape("send batch", (t) => {
     return _send_batch(t, batch).then( () => {
         for (var sn=0; sn < TEST_STRINGS.length; sn++) {
             var got_contents = fs.readFileSync(base + sn, "utf-8");
-            t.equals( got_contents, TEST_STRINGS[sn], `rz wrote out the file (${TEST_STRINGS[sn]})` );
+            t.equals( got_contents, TEST_STRINGS[sn], `rz wrote out the file: ` + JSON.stringify(TEST_STRINGS[sn]) );
             t.equals( 0 + fs.statSync(base + sn).mtime, 0 + mtime_1990, `... and observed the sent mtime` );
         }
     } );
@@ -135,7 +138,7 @@ tape("send single", (t) => {
                     t.ok( !!xf, 'rz accepted offer' );
                     xfer = xf;
                 } ).then(
-                    () => xfer.end( helper.string_to_octets(file_contents) )
+                    () => xfer.end( Array.from( text_encoder.encode(file_contents) ) )
                 ).then(
                     () => zsession.close()
                 );
@@ -147,7 +150,7 @@ tape("send single", (t) => {
             },
         ] ).then( () => {
             var got_contents = fs.readFileSync("single", "utf-8");
-            t.equals( got_contents, file_contents, `rz wrote out the file (${file_contents})` );
+            t.equals( got_contents, file_contents, `rz wrote out the file: ` + JSON.stringify(file_contents) );
         } ).then( doer );
     }
 
