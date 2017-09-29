@@ -369,6 +369,8 @@ append-style sessions.
 
 * Teach Session how to do and to handle pre-CRC checks.
 
+* Possible: command-line tool
+
 # COPYRIGHT
 
 Copyright 2017 Gasper Software Consulting
