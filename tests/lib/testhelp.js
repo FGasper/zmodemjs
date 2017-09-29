@@ -68,7 +68,9 @@ module.exports = {
         //We can’t just pipe this on through because there can be lone CR
         //bytes which screw up TAP::Harness.
         child.stderr.on("data", (d) => {
-            process.stderr.write( d.toString().replace(/\r/g, "\n") );
+            d = d.toString().replace(/\r/g, "\n");
+            if (d.substr(-1) !== "\n") d += "\n";
+            process.stderr.write(`STDERR: ${d}`);
         });
 
         child.stdout.on("data", (d) => {

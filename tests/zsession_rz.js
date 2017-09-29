@@ -123,7 +123,7 @@ tape("send batch", (t) => {
     } );
 });
 
-tape("send single", (t) => {
+tape.only("send single", (t) => {
     var xfer;
 
     let test_strings = TEST_STRINGS.slice(0);
