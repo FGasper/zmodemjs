@@ -229,8 +229,15 @@ ZMODEM header. So don’t do that. :-P
 
 # IMPLEMENTATION NOTES
 
+* There is an unfortunate buffer overflow bug that rears its head when
+you try to abort a ZMODEM session in the middle of a file transfer. There’s
+not much to be done about this except distribute [the patch](https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch) as widely as is feasible.
+
 * I’ve had success integrating zmodem.js with
 [xterm.js](https://xtermjs.org).
+
+* Browsers don’t have an easy way to download only part of a file;
+as a result, anything the browser saves to disk must be the entire file.
 
 * ZMODEM is a _binary_ protocol. (There was an extension planned
 to escape everything down to 7-bit ASCII, but it doesn’t seem to have
@@ -252,10 +259,6 @@ That header
 will include some form of line break; from `lrzsz` that means bytes 0x0d
 and 0x8a (not 0x0a). Your terminal might react oddly to that; if it does,
 try stripping out one or the other line ending character.
-
-* There is an unfortunate buffer overflow bug that rears its head when
-you try to abort a ZMODEM session in the middle of a file transfer. There’s
-not much to be done about this except distribute [the patch](https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch) as widely as is feasible.
 
 # PROTOCOL CHOICE
 

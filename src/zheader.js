@@ -339,7 +339,7 @@ class ZRINIT_HEADER extends Zmodem.Header {
 
 //Since context makes clear what’s going on, we use these
 //rather than the T-prefixed constants in the specification.
-var ZSINIT_FLAG = {
+const ZSINIT_FLAG = {
     ESCCTL: 0x40,  // Transmitter will escape ctl chars
     ESC8: 0x80,    // Transmitter will escape 8th bit
 };
@@ -396,32 +396,94 @@ class ZACK_HEADER extends Zmodem.Header {
 }
 ZACK_HEADER.prototype._hex_header_ending = HEX_HEADER_CRLF;
 
-//no options allowed here.
+//----------------------------------------------------------------------
+
+const ZFILE_VALUES = {
+
+    //ZF0 (i.e., last byte)
+    conversion: [
+        undefined,
+        "binary",           //ZCBIN
+        "text",             //ZCNL
+        "resume",           //ZCRESUM
+    ],
+
+    //ZF1
+    management: [
+        undefined,
+        "newer_or_longer",  //ZF1_ZMNEWL
+        "crc",              //ZF1_ZMCRC
+        "append",           //ZF1_ZMAPND
+        "clobber",          //ZF1_ZMCLOB
+        "newer",            //ZF1_ZMNEW
+        "mtime_or_length",  //ZF1_ZMNEW
+        "protect",          //ZF1_ZMPROT
+        "rename",           //ZF1_ZMPROT
+    ],
+
+    //ZF2
+    transport: [
+        undefined,
+        "compress",         //ZTLZW
+        "encrypt",          //ZTCRYPT
+        "rle",              //ZTRLE
+    ],
+
+    //ZF3
+    extended: {
+        sparse: 0x40,   //ZXSPARS
+    },
+};
+
+const ZFILE_ORDER = ["extended", "transport", "management", "conversion"];
+
+const ZMSKNOLOC = 0x80,
+    MANAGEMENT_MASK = 0x1f,
+    ZXSPARS = 0x40
+;
+
 class ZFILE_HEADER extends Zmodem.Header {
 
-    constructor(opts) {
-        super();
-        this._bytes4 = [ 0, 0, 0, 0 ];
+    //TODO: allow options on instantiation
+    get_options() {
+        var opts = {
+            sparse: !!(this._bytes4[0] & ZXSPARS),
+        };
 
-        //TODO: we gotta be able to parse these .. :-/
-        /*
-        if (opts.conversion) {
-            var conv_num = ZFILE_CONVERSION[ opts.conversion ];
-            if (!conv_num) throw( "Unknown conversion: " + opts.conversion );
-            this._bytes4[3] = conv_num;
+        var extended_unknown = this._bytes4[0] ^ ZXSPARS;
+        if (extended_unknown) {
         }
 
-        if (opts.management) {
-            var mgmt_num = ZFILE_MANAGEMENT[ opts.management ];
-            if (!mgmt_num) throw( "Unknown management: " + opts.management );
-            this._bytes4[2] = mgmt_num;
-        }
+        var bytes_copy = this._bytes4.slice(0);
 
-        if (opts.management_require_local) {
-            this._bytes4[2] |= 0x80;    // ZMSKNOLOC
-        */
+        ZFILE_ORDER.forEach( function(key, i) {
+            if (ZFILE_VALUES[key] instanceof Array) {
+                if (key === "management") {
+                    opts.skip_if_absent = !!(bytes_copy[i] & ZMSKNOLOC);
+                    bytes_copy[i] &= MANAGEMENT_MASK;
+                }
+
+                opts[key] = ZFILE_VALUES[key][ bytes_copy[i] ];
+            }
+            else {
+                for (var extkey in ZFILE_VALUES[key]) {
+                    opts[extkey] = !!(bytes_copy[i] & ZFILE_VALUES[key][extkey]);
+                    if (opts[extkey]) {
+                        bytes_copy[i] ^= ZFILE_VALUES[key][extkey]
+                    }
+                }
+            }
+
+            if (!opts[key] && bytes_copy[i]) {
+                opts[key] = "unknown:" + bytes_copy[i];
+            }
+        } );
+
+        return opts;
     }
 }
+
+//----------------------------------------------------------------------
 
 //Empty headers - in addition to ZRQINIT
 class ZSKIP_HEADER extends Zmodem.Header {}
