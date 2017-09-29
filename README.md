@@ -362,11 +362,12 @@ Contributions are welcome via the GitHub repository,
 
 # TODO
 
-* Be more resilient against failures, including cancellation.
+* Implement newline conversions.
 
-* More and better error classes. These should be documented eventually.
+* Teach send sessions to “fast-forward” so as to honor requests for
+append-style sessions.
 
-* More testing.
+* Teach Session how to do and to handle pre-CRC checks.
 
 # COPYRIGHT
 
