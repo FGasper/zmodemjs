@@ -23,6 +23,9 @@ Object.assign(
 
 var helper = require('./lib/testhelp');
 
+var dir_before = process.cwd();
+tape.onFinish( () => process.chdir( dir_before ) );
+
 process.chdir( helper.make_temp_dir() );
 
 let TEST_STRINGS = [
@@ -123,7 +126,7 @@ tape("send batch", (t) => {
     } );
 });
 
-tape.only("send single", (t) => {
+tape("send single", (t) => {
     var xfer;
 
     let test_strings = TEST_STRINGS.slice(0);
