@@ -37,11 +37,11 @@ Zmodem.Header = class ZmodemHeader {
     /**
      * Weed out the leading bytes that aren’t valid to start a ZMODEM header.
      *
-     * @param {Array} ibuffer - The octet values to parse.
+     * @param {number[]} ibuffer - The octet values to parse.
      *      Each array member should be an 8-bit unsigned integer (0-255).
      *      This object is mutated in the function.
      *
-     * @returns {Array} The octet values that were removed from the start
+     * @returns {number[]} The octet values that were removed from the start
      *      of “ibuffer”. Order is preserved.
      */
     static trim_leading_garbage(ibuffer) {
@@ -126,7 +126,7 @@ Zmodem.Header = class ZmodemHeader {
      * An exception is thrown if the given bytes are definitively invalid
      * as header values.
      *
-     * @param {Array} octets - The octet values to parse.
+     * @param {number[]} octets - The octet values to parse.
      *      Each array member should be an 8-bit unsigned integer (0-255).
      *      This object is mutated in the function.
      *
@@ -162,9 +162,10 @@ Zmodem.Header = class ZmodemHeader {
      * @param {string} name - The header type name, e.g., “ZRINIT”.
      *
      * @param {...*} args - The arguments to pass to the appropriate
-     *      subclass constructor.
+     *      subclass constructor. These aren’t documented currently
+     *      but are pretty easy to glean from the code.
      *
-     * @returns {Header} - An instance of the appropriate Header subclass.
+     * @returns {Header} An instance of the appropriate Header subclass.
      */
     static build(name /*, args */) {
         var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
@@ -186,7 +187,7 @@ Zmodem.Header = class ZmodemHeader {
      * Return the octet values array that represents the object
      * in ZMODEM hex encoding.
      *
-     * @returns {Array} - An array of octet values suitable for sending
+     * @returns {number[]} An array of octet values suitable for sending
      *      as binary data.
      */
     to_hex() {
@@ -205,7 +206,7 @@ Zmodem.Header = class ZmodemHeader {
      * @param {ZDLE} zencoder - A ZDLE instance to use for
      *      ZDLE encoding.
      *
-     * @returns {Array} - An array of octet values suitable for sending
+     * @returns {number[]} An array of octet values suitable for sending
      *      as binary data.
      */
     to_binary16(zencoder) {
@@ -219,7 +220,7 @@ Zmodem.Header = class ZmodemHeader {
      * @param {ZDLE} zencoder - A ZDLE instance to use for
      *      ZDLE encoding.
      *
-     * @returns {Array} - An array of octet values suitable for sending
+     * @returns {number[]} An array of octet values suitable for sending
      *      as binary data.
      */
     to_binary32(zencoder) {

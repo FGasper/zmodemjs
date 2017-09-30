@@ -31,8 +31,16 @@ const
     ABORT_SEQUENCE = Zmodem.ZMLIB.ABORT_SEQUENCE
 ;
 
-//A base class for objects that have events.
+/**
+ * A base class for objects that have events.
+ *
+ * @private
+ */
 class _Eventer {
+
+    /**
+     * Not called directly.
+     */
     constructor() {
         this._on_evt = {};
         this._evt_once_index = {};
@@ -51,6 +59,13 @@ class _Eventer {
         return this._on_evt[evt_name];
     }
 
+    /**
+     * Register a callback for a given event.
+     *
+     * @param {string} evt_name - The name of the event.
+     *
+     * @param {Function} todo - The function to execute when the event happens.
+     */
     on(evt_name, todo) {
         var queue = this._get_evt_queue(evt_name);
 
@@ -59,6 +74,15 @@ class _Eventer {
         return this;
     }
 
+    /**
+     * Unregister a callback for a given event.
+     *
+     * @param {string} evt_name - The name of the event.
+     *
+     * @param {Function} [todo] - The function to execute when the event
+     *  happens. If not given, the last event registered for the event
+     *  is unregistered.
+     */
     off(evt_name, todo) {
         var queue = this._get_evt_queue(evt_name);
 
@@ -93,8 +117,13 @@ class _Eventer {
 }
 
 /**
-The Session classes handle the protocol-level logic.
-These shield the user from dealing with headers and subpackets.
+ * The Session classes handle the protocol-level logic.
+ * These shield the user from dealing with headers and subpackets.
+ * This is a base class with functionality common to both Receive
+ * and Send subclasses.
+ *
+ * @extends _Eventer
+ * @private
 */
 Zmodem.Session = class ZmodemSession extends _Eventer {
 
@@ -151,26 +180,43 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     }
 
     /**
+     * Whether the current Session has ended.
+     *
+     * @returns {boolean} The ended state.
+     */
+    has_ended() { return this._has_ended() }
+
+    /**
      * Consumes an array of octets as ZMODEM session input.
      *
-     * @param {Function} array_buf - The input octets.
+     * @param {Function} octets - The input octets.
      */
     consume(array_buf) {
+        this._before_consume(octets);
+
         if (this._aborted) throw new Zmodem.Error('already_aborted');
 
-        if (!array_buf.length) return;
+        if (!octets.length) return;
 
-        this._strip_and_enqueue_input(array_buf);
+        this._strip_and_enqueue_input(octets);
 
-        if (!this._check_for_abort_sequence(array_buf)) {
+        if (!this._check_for_abort_sequence(octets)) {
             this._consume_first();
         }
 
         return;
     }
 
+    /**
+     * Whether the current Session has been aborted.
+     *
+     * @returns {boolean} The aborted state.
+     */
     aborted() { return !!this._aborted }
 
+    /**
+     * Not called directly.
+     */
     constructor() {
         super();
         //if (!sender_func) throw "Need sender!";
@@ -188,6 +234,15 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         this._Add_event("garbage");
         this._Add_event("session_end");
     }
+
+    /**
+     * Returns the Session object’s role.
+     *
+     * @returns {string} One of:
+     * - `receive`
+     * - `send`
+     */
+    get_role() { return this.type }
 
     _trim_leading_garbage_until_header() {
         var garbage = Zmodem.Header.trim_leading_garbage(this._input_buffer);
@@ -295,10 +350,15 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         this._input_buffer.push.apply( this._input_buffer, input );
     }
 
-    //Forsberg is a bit murky (IMO) about the mechanics of
-    //session aborts. What appears to be the case is that a session
-    //that’s in progress expects to receive an abort in response.
-    //
+    /**
+     * Abort the current session by sending the ZMODEM abort sequence.
+     * This function will cause the Session object to refuse to send
+     * any further data.
+     *
+     * NB: Forsberg is a bit murky (IMO) about the mechanics of
+     * session aborts. What appears to be the case is that a session
+     * that’s in progress expects to receive an abort in response.
+     */
     abort() {
 
         //this._expect_abort = true;
@@ -336,6 +396,8 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     _on_receive(hdr_or_pkt) {
         this._Happen("receive", hdr_or_pkt);
     }
+
+    _before_consume() {}
 }
 
 function _trim_OO(array) {
@@ -351,26 +413,15 @@ function _trim_OO(array) {
     return array;
 }
 
-//----------------------------------------------------------------------
-// Workflow:
-//  1) session = ZmodemSession.check_for_start(input_chunk);
-//      ^^ until we get a “session” object
-//  2) Add sender and event handlers:
-//      on("offer") - should either accept() or skip()
-//      on("file_end")  (“transfer_complete”?)
-//      on("session_end")
-//  3) start()
-//  4) Every time a file request comes in, either accept() or skip()
-//  5) After the session is done, be sure to check get_trailing_bytes()
-//      and send those to the terminal.
-//
-//This guy will send all headers as hex.
-//(… which I guess is why there’s no TCANFC32?)
-//But then why need ZDLE encoding?
 Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
     //We only get 1 file at a time, so on each consume() either
     //continue state for the current file or start a new one.
 
+    /**
+     * Not called directly.
+     *
+     * @extends Session
+     */
     constructor() {
         super();
 
@@ -379,7 +430,12 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         this._Add_event("file_end");
     }
 
-    consume(array_buf) {
+    /**
+     * Consume input bytes from the sender.
+     *
+     * @param {number[]} octets - The bytes to consume.
+     */
+    _before_consume(octets) {
         if (this._bytes_after_OO) {
             throw "PROTOCOL: Session is completed!";
         }
@@ -387,11 +443,15 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         //Put this here so that our logic later on has access to the
         //input string and can populate _bytes_after_OO when the
         //session ends.
-        this._bytes_being_consumed = array_buf;
-
-        super.consume(array_buf);
+        this._bytes_being_consumed = octets;
     }
 
+    /**
+     * Return any bytes that have been `consume()`d but
+     * came after the end of the ZMODEM session.
+     *
+     * @returns {number[]} The trailing bytes.
+     */
     get_trailing_bytes() {
         if (this._aborted) return [];
 
@@ -402,7 +462,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         return this._bytes_after_OO.slice(0);
     }
 
-    has_ended() { return !!this._bytes_after_OO }
+    _has_ended() { return this.aborted() || !!this._bytes_after_OO }
 
     //Receiver always sends hex headers.
     _get_header_formatter() { return "to_hex" }
@@ -511,7 +571,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             bytes_remaining: the_rest[5] ? parseInt( the_rest[5], 10 ) : null,
         };
 
-        var xfer = new ZmodemOffer(
+        var xfer = new Offer(
             this._file_info,
             this._accept.bind(this),
             this._skip.bind(this)
@@ -520,12 +580,6 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
 
         //this._Happen("offer", xfer);
     }
-
-    /*
-    get_file_info() {
-        return JSON.parse( JSON.stringify( this._file_info ) );
-    }
-    */
 
     _consume_ZDATA_data(subpacket) {
         if (!this._accepted_offer) {
@@ -554,7 +608,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         }
     }
 
-    get_file_offset() { return this._file_offset }
+    //get_file_offset() { return this._file_offset }
 
     _make_promise_for_between_files() {
         var sess = this;
@@ -602,10 +656,14 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         this._attn = spkt.get_payload();
     }
 
-    //This returns a promise that’s fulfilled on an offer or close.
-    //Once this promise resolves, we should either accept() or skip()
-    //on the passed transfer/offer object. (If it’s a close, there is
-    //nothing passed to the resolver.)
+    /**
+     * Start the ZMODEM session by signaling to the sender that
+     * we are ready for the first file offer.
+     *
+     * @returns {Promise} A promise that resolves with an Offer object
+     * or, if the sender closes the session immediately without offering
+     * anything, nothing.
+     */
     start() {
         if (this._started) throw "Already started!";
         this._started = true;
@@ -750,21 +808,57 @@ Object.assign(
     }
 );
 
+//----------------------------------------------------------------------
+
+/**
+ * Common methods for Transfer and Offer objects.
+ *
+ * @mixin
+ */
 var Transfer_Offer_Mixin = {
-    get_details() {
+    /**
+     * Returns the file details object.
+     * @returns {FileDetails}
+     */
+    get_details: function get_details() {
         return Object.assign( {}, this._file_info );
     },
 
-    get_offset() { return this._file_offset }
+    /**
+     * Returns the offset based on the last transferred chunk.
+     * @returns {number} The file offset (i.e., number of bytes after
+     *  the start of the file).
+     */
+    get_offset: function get_offset() {
+        return this._file_offset;
+    }
 };
+
+/**
+ * @typedef {Object} FileDetails
+ * @property {string} name - The name of the file.
+ * @property {number} [size] - The file size, in bytes.
+ * @property {number} [mode] - The file mode (e.g., 0100644).
+ * @property {Date|number} [mtime] - The file’s modification time.
+ *  When expressed as a number, the value is epoch seconds.
+ * @property {number} [files_remaining] - Inclusive of the current file,
+ *  so this value is never less than 1.
+ * @property {number} [files_remaining] - Inclusive of the current file.
+ */
 
 /**
  * A class to represent a sender’s interaction with a single file
  * transfer within a batch. When a receiver accepts an offer, the
  * Session instantiates this class and passes the instance as the
  * promise resolution from send_offer().
+ *
+ * @mixes Transfer_Offer_Mixin
  */
-class ZmodemTransfer {
+class Transfer {
+
+    /**
+     * Not called directly.
+     */
     constructor(file_info, offset, send_func, end_func) {
         this._file_info = file_info;
         this._file_offset = offset || 0;
@@ -776,21 +870,17 @@ class ZmodemTransfer {
     /**
      * Send a (non-terminal) piece of the file.
      *
-     * @method send()
-     * @param { Array | Uint8Array } The bytes to send
+     * @param { number[] | Uint8Array } array_like - The bytes to send.
      */
     send(array_like) {
-        var ret = this._send(array_like);
+        this._send(array_like);
         this._file_offset += array_like.length;
-        return ret;
     }
 
     /**
      * Complete the file transfer.
      *
-     * @method send()
-     *
-     * @param { Array | Uint8Array } OPTIONAL: The last bytes to send.
+     * @param { number[] | Uint8Array } [array_like] - The last bytes to send.
      *
      * @return { Promise } Resolves when the receiver has indicated
      *      acceptance of the end of the file transfer.
@@ -801,15 +891,21 @@ class ZmodemTransfer {
         return ret;
     }
 }
-Object.assign( ZmodemTransfer.prototype, Transfer_Offer_Mixin );
+Object.assign( Transfer.prototype, Transfer_Offer_Mixin );
 
 /**
  * A class to represent a receiver’s interaction with a single file
  * transfer offer within a batch. There is functionality here to
  * skip or accept offered files and either to spool the packet
  * payloads or to handle them yourself.
+ *
+ * @mixes Transfer_Offer_Mixin
  */
-class ZmodemOffer extends _Eventer {
+class Offer extends _Eventer {
+
+    /**
+     * Not called directly.
+     */
     constructor(file_info, accept_func, skip_func) {
         super();
 
@@ -825,34 +921,31 @@ class ZmodemOffer extends _Eventer {
     /**
      * Tell the sender that you don’t want the offered file.
      *
-     * @return { Promise } Resolves with the next offer or with
-     *      the end of the connection.
      */
     skip() { return this._skip_func.apply(this, arguments) }
 
     /**
      * Tell the sender to send the offered file.
      *
-     * @param { Object } opts - Can be:
+     * @param { Object } [opts] - Can be:
+     * @param {string} [opts.oninput=spool_uint8array] - Can be:
      *
-     *      - “on_input”: if given, can be:
+     * - `spool_uint8array`: Stores the ZMODEM
+     *     packet payloads as Uint8Array instances.
+     *     This makes for an easy transition to a Blob,
+     *     which JavaScript can use to save the file to disk.
      *
-     *          - "spool_uint8array": (default) Stores the ZMODEM
-     *              packet payloads as Uint8Array instances.
-     *              This makes for an easy transition to a Blob,
-     *              which JavaScript can use to save the file to disk.
+     * - `spool_array`: Stores the ZMODEM packet payloads
+     *     as Array instances. Each value is a number.
      *
-     *          - "spool_array": Stores the ZMODEM packet payloads
-     *              as Array instances. Each value is a number.
+     * - (function): A handler that receives each payload
+     *     as it arrives. The Offer object does not store
+     *     the payloads internally when thus configured.
      *
-     *          - (function): A handler that receives each payload
-     *              as it arrives. The Offer object does not store
-     *              the payloads internally when thus configured.
-     *
-     * @return { Promise } Resolves with the next offer or with
-     *      the end of the connection. If the Offer has been spooling
-     *      the packet payloads, an Array with those payloads is given
-     *      as the promise resolution.
+     * @return { Promise } Resolves when the file is fully received.
+     *      If the Offer has been spooling
+     *      the packet payloads, the promise resolves with an Array
+     *      that contains those payloads.
      */
     accept(opts) {
         if (!opts) opts = {};
@@ -903,7 +996,7 @@ class ZmodemOffer extends _Eventer {
         return this._spool;
     }
 }
-Object.assign( ZmodemOffer.prototype, Transfer_Offer_Mixin );
+Object.assign( Offer.prototype, Transfer_Offer_Mixin );
 
 //Curious that ZSINIT isn’t here … but, lsz sends it as hex.
 const SENDER_BINARY_HEADER = {
@@ -911,7 +1004,17 @@ const SENDER_BINARY_HEADER = {
     ZDATA: true,
 };
 
+/**
+ * A class that encapsulates behavior for a ZMODEM sender.
+ *
+ * @class Session.Send
+ * @extends Session
+ */
 Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
+
+    /**
+     * Not called directly.
+     */
     constructor(zrinit_hdr) {
         super();
 
@@ -964,6 +1067,16 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         */
     }
 
+    /**
+     * Sets the sender function. The first time this is called,
+     * it will also initiate a keepalive using ZSINIT until the
+     * first file is sent.
+     *
+     * @param {Function} func - The function to call.
+     *  It will receive an Array with the relevant octets.
+     *
+     * @return {Session} The session object (for chaining).
+     */
     set_sender(func) {
         super.set_sender(func);
 
@@ -971,6 +1084,8 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
             this._start_keepalive_on_set_sender = false;
             this._start_keepalive();
         }
+
+        return this;
     }
 
     //7.3.3 .. The sender also uses hex headers when they are
@@ -1094,14 +1209,8 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         return promise;
     }
 
-    send_offer(params) {
-        if (!params) throw "need file params!";
-
+    _convert_params_to_offer_payload_array(params) {
         params = Zmodem.Validation.offer_parameters(params);
-
-        if (this._sending_file) throw "Already sending file!";
-
-        this._stop_keepalive();
 
         var subpacket_payload = params.name + "\x00";
 
@@ -1121,14 +1230,36 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         }
 
         subpacket_payload += subpacket_space_pieces.join(" ");
-        var payload_array = this._string_to_octets(subpacket_payload);
-        payload_array = Array.prototype.slice.call(payload_array);
+        return this._string_to_octets(subpacket_payload);
+    }
+
+    /**
+     * Send an offer to the receiver.
+     *
+     * @param {Object} params - Consists of:
+     * - `name` (required): string
+     * - `size` (optional): number
+     * - `mtime` (optional): Date or number (epoch seconds)
+     * - `mode` (optional): number; a bit-AND with 0x8000 will be applied
+     * - `files_remaining` (optional): number; includes the present file
+     * - `bytes_remaining` (optional): number; includes the present file
+     *
+     * @returns {Promise} If the receiver accepts the offer, then the
+     * resolution is a Transfer object; otherwise the resolution is
+     * undefined.
+     */
+    send_offer(params) {
+        if (!params) throw "need file params!";
+
+        if (this._sending_file) throw "Already sending file!";
+
+        var payload_array = this._convert_params_to_offer_payload_array(params);
+
+        this._stop_keepalive();
 
         var sess = this;
 
-        var first_promise = FORCE_ESCAPE_CTRL_CHARS ? this._ensure_receiver_escapes_ctrl_chars() : Promise.resolve();
-
-        return first_promise.then( function() {
+        var doer_func = function() {
 
             //return Promise object that is fulfilled when the ZRPOS or ZSKIP arrives.
             //The promise value is the byte offset, or undefined for ZSKIP.
@@ -1142,7 +1273,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
                     ZRPOS: function(hdr) {
                         sess._sending_file = true;
                         res(
-                            new ZmodemTransfer(
+                            new Transfer(
                                 params,
                                 hdr.get_offset(),
                                 sess._send_interim_file_piece.bind(sess),
@@ -1158,7 +1289,13 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
             delete sess._sent_ZDATA;
 
             return handler_setter_promise;
-        } );
+        };
+
+        if (FORCE_ESCAPE_CTRL_CHARS) {
+            return this._ensure_receiver_escapes_ctrl_chars().then(doer_func);
+        }
+
+        return doer_func();
     }
 
     _send_header_and_data( hdr_name_and_args, data_arr, frameend ) {
@@ -1188,7 +1325,8 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
             this._textencoder = new TextEncoder();
         }
 
-        return this._textencoder.encode(string);
+        var uint8arr = this._textencoder.encode(string);
+        return Array.prototype.slice.call(uint8arr);
     }
 
     /*
@@ -1262,6 +1400,12 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         };
     }
 
+    /**
+     * Signal to the receiver that the ZMODEM session is wrapping up.
+     *
+     * @returns {Promise} Resolves when the receiver has responded to
+     * our signal that the session is over.
+     */
     close() {
         var ok_to_close = (this._last_header_name === "ZRINIT")
         if (!ok_to_close) {
@@ -1293,8 +1437,8 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         return ret;
     }
 
-    has_ended() {
-        return this._aborted || !!this._sent_OO;
+    _has_ended() {
+        return this.aborted() || !!this._sent_OO;
     }
 
     _send_file_part(bytes_obj, final_packetend) {

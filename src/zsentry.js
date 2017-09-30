@@ -33,7 +33,7 @@
  *  - Sometimes additional traffic arrives that makes it apparent
  *      that no ZMODEM session is intended to start; in this case,
  *      the Sentry marks the Detection as “stale” and calls the
- *      “on_retract” handler. Any attempt from here to .confirm()
+ *      `on_retract` handler. Any attempt from here to .confirm()
  *      on the Detection object will prompt an exception.
  *
  *      (This “retraction” behavior will only happen prior to
@@ -70,12 +70,21 @@
      * An instance of this object is passed to the Sentry’s on_detect
      * callback each time the Sentry object sees what looks like the
      * start of a ZMODEM session.
+     *
+     * Note that it is possible for a detection to be “retracted”
+     * if the Sentry consumes bytes afterward that are not ZMODEM.
+     * When this happens, the Sentry’s `retract` event will fire,
+     * after which the Detection object is no longer usable.
      */
     class Detection {
+
+        /**
+         * Not called directly.
+         */
         constructor(session_type, accepter, denier, checker) {
 
             //confirm() - user confirms that ZMODEM is desired
-            this.confirm = accepter;
+            this._confirmer = accepter;
 
             //deny() - user declines ZMODEM; send abort sequence
             //
@@ -85,21 +94,81 @@
             //then we just send a close(), but it doesn’t seem to be
             //possible for a receiver. Thus, let’s just leave it so
             //it’s at least consistent (and simpler, too).
-            this.deny = denier;
+            this._denier = denier;
 
-            this.is_valid = checker;
+            this._is_valid = checker;
 
             this._session_type = session_type;
         }
 
-        get_session_type() { return this._session_type }
+        /**
+         * Confirm that the detected ZMODEM sequence indicates the
+         * start of a ZMODEM session.
+         *
+         * @return {Session} The ZMODEM Session object (i.e., either a
+         *  Send or Receive instance).
+         */
+        confirm() {
+            return this._confirmer.apply(this, arguments);
+        }
+
+        /**
+         * Tell the Sentry that the detected bytes sequence is
+         * **NOT** intended to be the start of a ZMODEM session.
+         */
+        deny() {
+            return this._denier.apply(this, arguments);
+        }
+
+        /**
+         * Tells whether the Detection is still valid; i.e., whether
+         * the Sentry has `consume()`d bytes that invalidate the
+         * Detection.
+         *
+         * @returns {boolean} Whether the Detection is valid.
+         */
+        is_valid() {
+            return this._is_valid.apply(this, arguments);
+        }
+
+        /**
+         * Gives the session’s role.
+         *
+         * @returns {string} One of:
+         * - `receive`
+         * - `send`
+         */
+        get_session_role() { return this._session_type }
     }
 
     /**
      * Class that parses an input stream for the beginning of a
-     * ZMODEM session.
+     * ZMODEM session. This is the “mother” class for zmodem.js;
+     * all other class instances are created, directly or indirectly,
+     * by an instance of this class.
      */
     Zmodem.Sentry = class ZmodemSentry {
+
+        /**
+         * Invoked directly. Creates a new Sentry that inspects all
+         * traffic before it goes to the terminal.
+         *
+         * @param {Object} options - The Sentry parameters
+         *
+         * @param {Function} options.to_terminal - Handler that sends
+         * traffic to the terminal object. Receives an iterable object
+         * (e.g., an Array) that contains octet numbers.
+         *
+         * @param {Function} options.on_detect - Handler for new
+         * detection events. Receives a new Detection object.
+         *
+         * @param {Function} options.on_retract - Handler for retraction
+         * events. Receives no input.
+         *
+         * @param {Function} options.sender - Handler that sends traffic to
+         * the peer. If, for example, your application uses WebSocket to talk
+         * to the peer, use this to send data to the WebSocket instance.
+         */
         constructor(options) {
             if (!options) throw "Need options!";
 
@@ -123,23 +192,23 @@
          *
          *  - If there is no active or pending ZMODEM session, the text is
          *      all output. (This is regardless of whether we’ve got a new
-         *      Session.)
+         *      Detection.)
          *
-         *  - If there is no active ZMODEM session and the input *ends* with
-         *      a ZRINIT or ZRQINIT, then a new Session object is created,
-         *      and its accepter is passed to the “on_detect” function.
-         *      If there was another pending Session object, it is expired.
+         *  - If there is no active ZMODEM session and the input **ends** with
+         *      a ZRINIT or ZRQINIT, then a new Detection object is created,
+         *      and it is passed to the “on_detect” function.
+         *      If there was another pending Detection object, it is retracted.
          *
          *  - If there is no active ZMODEM session and the input does NOT end
-         *      with a ZRINIT or ZRQINIT, then any pending Session object is
-         *      expired, and “on_retract” is called.
+         *      with a ZRINIT or ZRQINIT, then any pending Detection object is
+         *      retracted.
          *
          *  - If there is an active ZMODEM session, the input is passed to it.
-         *      Any non-ZMODEM data parsed from the input is sent to output.
+         *      Any non-ZMODEM data (i.e., “garbage”) parsed from the input
+         *      is sent to output.
          *      If the ZMODEM session ends, any post-ZMODEM part of the input
          *      is sent to output.
          */
-
         consume(input) {
             if (!(input instanceof Array)) {
                 input = Array.prototype.slice.call( new Uint8Array(input) );
@@ -205,6 +274,10 @@
                     return sentry._zsession = new_session;
                 };
 
+                function denier() {
+                    if (!this.is_valid()) return;
+                };
+
                 this._on_detect( new Detection(
                     new_session.type,
                     accepter,
@@ -258,6 +331,8 @@
          * terminal in real-time, this will send on the initial
          * ZRINIT/ZRQINIT bytes to the terminal. They’re meant to go to the
          * terminal anyway, so that should be fine.
+         *
+         * @private
          *
          * @param {Array|Uint8Array} array_like - The input bytes.
          *      Each member should be a number between 0 and 255 (inclusive).

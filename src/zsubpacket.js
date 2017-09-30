@@ -21,14 +21,14 @@ Zmodem.Subpacket = class ZmodemSubpacket {
      *      Each array member should be an 8-bit unsigned integer (0-255).
      *
      * @param {string} frameend - One of:
-     *      - “no_end_no_ack”   (ZCRCG)
-     *      - “end_no_ack”      (ZCRCE)
-     *      - “no_end_ack”      (ZCRCQ) - unused currently
-     *      - “end_ack”         (ZCRCW)
+     * - `no_end_no_ack`
+     * - `end_no_ack`
+     * - `no_end_ack` (unused currently)
+     * - `end_ack`
      *
-     * @returns {Subpacket} - An instance of the appropriate Subpacket subclass.
+     * @returns {Subpacket} An instance of the appropriate Subpacket subclass.
      */
-    static build(content, frameend) {
+    static build(octets, frameend) {
 
         //TODO: make this better
         var Ctr = SUBPACKET_BUILDER[frameend];
@@ -36,7 +36,7 @@ Zmodem.Subpacket = class ZmodemSubpacket {
             throw("No subpacket type “" + frameend + "” is defined! Try one of: " + Object.keys(SUBPACKET_BUILDER).join(", "));
         }
 
-        return new Ctr(content);
+        return new Ctr(octets);
     }
 
     /**
@@ -45,7 +45,7 @@ Zmodem.Subpacket = class ZmodemSubpacket {
      *
      * @param {ZDLE} zencoder - A ZDLE instance to use for ZDLE encoding.
      *
-     * @returns {Array} - An array of octet values suitable for sending
+     * @returns {number[]} An array of octet values suitable for sending
      *      as binary data.
      */
     encode16(zencoder) {
@@ -58,7 +58,7 @@ Zmodem.Subpacket = class ZmodemSubpacket {
      *
      * @param {ZDLE} zencoder - A ZDLE instance to use for ZDLE encoding.
      *
-     * @returns {Array} - An array of octet values suitable for sending
+     * @returns {number[]} An array of octet values suitable for sending
      *      as binary data.
      */
     encode32(zencoder) {
@@ -73,18 +73,11 @@ Zmodem.Subpacket = class ZmodemSubpacket {
      * internals. This is OK if you won’t need the Subpacket anymore, but
      * just be careful.
      *
-     * @returns {Array} - The subpacket’s payload, represented as an
-     * array of octet values. DO NOT ALTER THIS ARRAY unless you no longer
-     * need the Subpacket.
+     * @returns {number[]} The subpacket’s payload, represented as an
+     * array of octet values. **DO NOT ALTER THIS ARRAY** unless you
+     * no longer need the Subpacket.
      */
     get_payload() { return this._payload }
-
-    /**
-     * Return the subpacket payload’s length.
-     *
-     * @returns {number} - The subpacket payload’s length, in bytes.
-     */
-    get_payload_length() { return this._payload.length }
 
     /**
      * Parse out a Subpacket object from a given array of octet values,
@@ -93,7 +86,7 @@ Zmodem.Subpacket = class ZmodemSubpacket {
      * An exception is thrown if the given bytes are definitively invalid
      * as subpacket values with 16-bit CRC.
      *
-     * @param {Array} octets - The octet values to parse.
+     * @param {number[]} octets - The octet values to parse.
      *      Each array member should be an 8-bit unsigned integer (0-255).
      *      This object is mutated in the function.
      *
@@ -111,7 +104,7 @@ Zmodem.Subpacket = class ZmodemSubpacket {
     /**
      * Same as parse16(), but assuming a 32-bit CRC.
      *
-     * @param {Array} octets - The octet values to parse.
+     * @param {number[]} octets - The octet values to parse.
      *      Each array member should be an 8-bit unsigned integer (0-255).
      *      This object is mutated in the function.
      *
@@ -123,7 +116,9 @@ Zmodem.Subpacket = class ZmodemSubpacket {
         return ZmodemSubpacket._parse(octets, 4);
     }
 
-    //not used directly
+    /**
+     * Not used directly.
+     */
     constructor(payload) {
         this._payload = payload;
     }

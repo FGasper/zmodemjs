@@ -20,8 +20,8 @@ Zmodem.ZDLE = class ZmodemZDLE {
      * Create a ZDLE encoder.
      *
      * @param {object} [config] - The initial configuration.
-     *      The only recognized option is “escape_ctrl_chars”,
-     *      whose value is the same as is given to set_escape_ctrl_chars().
+     * @param {object} config.escape_ctrl_chars - Whether the ZDLE encoder
+     *  should escape control characters.
      */
     constructor(config) {
         this._config = {};
@@ -67,12 +67,12 @@ Zmodem.ZDLE = class ZmodemZDLE {
      * Encode an array of octet values and return it.
      * This will mutate the given array.
      *
-     * @param {Array} octets - The octet values to transform.
+     * @param {number[]} octets - The octet values to transform.
      *      Each array member should be an 8-bit unsigned integer (0-255).
      *      This object is mutated in the function.
      *
-     * @returns {Array} The passed-in array. This is the same object that is
-     *      passed in.
+     * @returns {number[]} The passed-in array, transformed. This is the
+     *  same object that is passed in.
      */
     encode(octets) {
         if (!this._zdle_table) throw "No ZDLE encode table configured!";
@@ -112,12 +112,12 @@ Zmodem.ZDLE = class ZmodemZDLE {
      * Decode an array of octet values and return it.
      * This will mutate the given array.
      *
-     * @param {Array} octets - The octet values to transform.
+     * @param {number[]} octets - The octet values to transform.
      *      Each array member should be an 8-bit unsigned integer (0-255).
      *      This object is mutated in the function.
      *
-     * @returns {Array} The passed-in array. This is the same object that is
-     *      passed in.
+     * @returns {number[]} The passed-in array.
+     *  This is the same object that is passed in.
      */
     static decode(octets) {
         for (var o=octets.length-1; o>=0; o--) {
@@ -134,7 +134,7 @@ Zmodem.ZDLE = class ZmodemZDLE {
      * If the requested number of ZDLE-encoded bytes isn’t available,
      * then the passed-in array is unmodified (and the return is undefined).
      *
-     * @param {Array} octets - The octet values to transform.
+     * @param {number[]} octets - The octet values to transform.
      *      Each array member should be an 8-bit unsigned integer (0-255).
      *      This object is mutated in the function.
      *
@@ -143,7 +143,7 @@ Zmodem.ZDLE = class ZmodemZDLE {
      *
      * @param {number} count - The number of bytes (octet values) to return.
      *
-     * @returns {Array|undefined} An array with the requested number of
+     * @returns {number[]|undefined} An array with the requested number of
      *      decoded octet values, or undefined if that number of decoded
      *      octets isn’t available (given the passed-in offset).
      */

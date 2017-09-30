@@ -8,6 +8,7 @@
     "blue-tape": "^1.0.0",
     "concat": "^1.0.3",
     "jake": "^8.0.15",
+    "jsdoc": "^3.5.5",
     "tape": "*",
     "text-encoding": "^0.6.4",
     "tmp": "0.0.33",
