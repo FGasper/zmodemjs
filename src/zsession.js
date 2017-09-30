@@ -811,6 +811,18 @@ Object.assign(
 //----------------------------------------------------------------------
 
 /**
+ * @typedef {Object} FileDetails
+ * @property {string} name - The name of the file.
+ * @property {number} [size] - The file size, in bytes.
+ * @property {number} [mode] - The file mode (e.g., 0100644).
+ * @property {Date|number} [mtime] - The file’s modification time.
+ *  When expressed as a number, the value is epoch seconds.
+ * @property {number} [files_remaining] - Inclusive of the current file,
+ *  so this value is never less than 1.
+ * @property {number} [files_remaining] - Inclusive of the current file.
+ */
+
+/**
  * Common methods for Transfer and Offer objects.
  *
  * @mixin
@@ -833,18 +845,6 @@ var Transfer_Offer_Mixin = {
         return this._file_offset;
     }
 };
-
-/**
- * @typedef {Object} FileDetails
- * @property {string} name - The name of the file.
- * @property {number} [size] - The file size, in bytes.
- * @property {number} [mode] - The file mode (e.g., 0100644).
- * @property {Date|number} [mtime] - The file’s modification time.
- *  When expressed as a number, the value is epoch seconds.
- * @property {number} [files_remaining] - Inclusive of the current file,
- *  so this value is never less than 1.
- * @property {number} [files_remaining] - Inclusive of the current file.
- */
 
 /**
  * A class to represent a sender’s interaction with a single file
@@ -1236,13 +1236,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
     /**
      * Send an offer to the receiver.
      *
-     * @param {Object} params - Consists of:
-     * - `name` (required): string
-     * - `size` (optional): number
-     * - `mtime` (optional): Date or number (epoch seconds)
-     * - `mode` (optional): number; a bit-AND with 0x8000 will be applied
-     * - `files_remaining` (optional): number; includes the present file
-     * - `bytes_remaining` (optional): number; includes the present file
+     * @param {FileDetails} params - All about the file you want to transfer.
      *
      * @returns {Promise} If the receiver accepts the offer, then the
      * resolution is a Transfer object; otherwise the resolution is
