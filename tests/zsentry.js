@@ -217,7 +217,7 @@ tape('parse', (t) => {
                 `Rest of text goes through`
             );
             t.is( typeof tester.detected, "object", '... and now there is a session' );
-            t.is( tester.detected.get_session_type(), sesstype, '... of the right type' );
+            t.is( tester.detected.get_session_role(), sesstype, '... of the right type' );
 
         }
     };
