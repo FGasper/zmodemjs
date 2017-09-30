@@ -133,9 +133,9 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
      * we’ll return it. If the input isn’t a header,
      * for whatever reason, we return undefined.
      *
-     * @param {Array} octets - The bytes to parse.
+     * @param {number[]} octets - The bytes to parse.
      *
-     * @return {Array|undefined} A Session object if the beginning
+     * @return {Session|undefined} A Session object if the beginning
      *      of a session was parsable in “octets”; otherwise undefined.
      */
     static parse( octets ) {
@@ -189,9 +189,9 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     /**
      * Consumes an array of octets as ZMODEM session input.
      *
-     * @param {Function} octets - The input octets.
+     * @param {number[]} octets - The input octets.
      */
-    consume(array_buf) {
+    consume(octets) {
         this._before_consume(octets);
 
         if (this._aborted) throw new Zmodem.Error('already_aborted');
