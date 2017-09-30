@@ -123,7 +123,6 @@ class _Eventer {
  * and Send subclasses.
  *
  * @extends _Eventer
- * @private
 */
 Zmodem.Session = class ZmodemSession extends _Eventer {
 
@@ -354,10 +353,6 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
      * Abort the current session by sending the ZMODEM abort sequence.
      * This function will cause the Session object to refuse to send
      * any further data.
-     *
-     * NB: Forsberg is a bit murky (IMO) about the mechanics of
-     * session aborts. What appears to be the case is that a session
-     * that’s in progress expects to receive an abort in response.
      */
     abort() {
 
@@ -413,14 +408,16 @@ function _trim_OO(array) {
     return array;
 }
 
+/** A class for ZMODEM receive sessions.
+ *
+ * @extends Session
+ */
 Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
     //We only get 1 file at a time, so on each consume() either
     //continue state for the current file or start a new one.
 
     /**
      * Not called directly.
-     *
-     * @extends Session
      */
     constructor() {
         super();
@@ -433,6 +430,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
     /**
      * Consume input bytes from the sender.
      *
+     * @private
      * @param {number[]} octets - The bytes to consume.
      */
     _before_consume(octets) {
@@ -1007,7 +1005,6 @@ const SENDER_BINARY_HEADER = {
 /**
  * A class that encapsulates behavior for a ZMODEM sender.
  *
- * @class Session.Send
  * @extends Session
  */
 Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
