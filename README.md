@@ -343,21 +343,29 @@ or know where to find it, please contact me.
 
 # REQUIREMENTS
 
-There are no external requirements; however, zmodem.js needs some fairly modern
-JavaScript APIs (or shims to emulate them):
+There are no external library requirements; however, zmodem.js needs some
+fairly modern JavaScript APIs (or shims to emulate them):
 
-* You’ll probably need the `download` attribute on `<a>` elements to receive files. (Or Flash, I guess … *\<shudder\>*)
+* You’ll probably need the `download` attribute on `<a>` elements to receive files.
+(Or Flash, I guess … *\<shudder\>*)
 
-* [TextEncoder](https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder) and [TextDecoder](https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder)
+* [TextEncoder](https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder)
+and [TextDecoder](https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder)
 
 * [ES6 Classes](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes)
 
 I’ve tried to stay away from dependence on other ES6 patterns in the
-production code.
+production code, though the tests use them liberally.
+
+# DOCUMENTATION
+
+Besides this document, each module has inline [jsdoc](http://usejsdoc.org).
+You can see it by running `npm install` in the repository’s root directory;
+the documentation will build in a newly-created `documentation` directory.
 
 # CONTRIBUTING
 
-Contributions are welcome via the GitHub repository,
+Contributions are welcome via
 [https://github.com/FGasper/zmodemjs](https://github.com/FGasper/zmodemjs).
 
 # TODO
@@ -369,7 +377,8 @@ append-style sessions.
 
 * Teach Session how to do and to handle pre-CRC checks.
 
-* Possible: command-line tool
+* Possible: command-line tool, if there’s demand for it, e.g., in
+environments where lrzsz can’t run.
 
 # COPYRIGHT
 
