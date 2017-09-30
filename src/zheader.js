@@ -272,7 +272,7 @@ const ZRINIT_FLAG = {
 
 function _get_ZRINIT_flag_num(fl) {
     if (!ZRINIT_FLAG[fl]) {
-        throw("Invalid ZRINIT flag: " + fl);
+        throw new Zmodem.Error("Invalid ZRINIT flag: " + fl);
     }
     return ZRINIT_FLAG[fl];
 }
