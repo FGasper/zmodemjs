@@ -810,13 +810,19 @@ Object.assign(
 
 /**
  * @typedef {Object} FileDetails
+ *
  * @property {string} name - The name of the file.
+ *
  * @property {number} [size] - The file size, in bytes.
+ *
  * @property {number} [mode] - The file mode (e.g., 0100644).
+ *
  * @property {Date|number} [mtime] - The file’s modification time.
- *  When expressed as a number, the value is epoch seconds.
+ *  When expressed as a number, the unit is epoch seconds.
+ *
  * @property {number} [files_remaining] - Inclusive of the current file,
  *  so this value is never less than 1.
+ *
  * @property {number} [files_remaining] - Inclusive of the current file.
  */
 
@@ -828,7 +834,7 @@ Object.assign(
 var Transfer_Offer_Mixin = {
     /**
      * Returns the file details object.
-     * @returns {FileDetails}
+     * @returns {FileDetails} `mtime` is a Date.
      */
     get_details: function get_details() {
         return Object.assign( {}, this._file_info );
@@ -841,7 +847,7 @@ var Transfer_Offer_Mixin = {
      */
     get_offset: function get_offset() {
         return this._file_offset;
-    }
+    },
 };
 
 /**

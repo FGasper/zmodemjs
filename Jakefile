@@ -37,7 +37,8 @@ task( "documentation", [], () => {
         "./node_modules/.bin/jsdoc",
         [
             "--configure", "jsdoc.json",
-            "--destination", "documentation"
+            "--destination", "documentation",
+            "--readme", "README.md",
         ].concat(BROWSER_SOURCES)
     );
 } );
