@@ -37,11 +37,10 @@ return {
     * and sent to the receiver.
     *
     * @param {Function} [options.on_file_complete] - Called immediately
-    * after the last file packet is sent.
+    * after the last file packet is sent. Arguments are:
     *
-    * Arguments are the same as for
-    * `on_progress`, but note that the final argument is probably an empty
-    * Uint8Array.
+    * - (File) - The File object that corresponds to the file.
+    * - (Transfer) - The Transfer object for the now-completed transfer.
     *
     * @return {Promise} A Promise that fulfills when the batch is done.
     *      Note that skipped files are not considered an error condition.
@@ -119,8 +118,12 @@ return {
                         _check_aborted(session);
 
                         xfer.end(piece).then( function() {
+                            if (options.on_progress && piece.length) {
+                                options.on_progress(cur_b.obj, xfer, piece);
+                            }
+
                             if (options.on_file_complete) {
-                                options.on_file_complete(cur_b.obj, xfer, piece);
+                                options.on_file_complete(cur_b.obj, xfer);
                             }
 
                             //Resolve the current file-send promise with

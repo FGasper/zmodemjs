@@ -593,8 +593,8 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             return;
         }
 
-        this._on_data_in(subpacket);
         this._file_offset += subpacket.get_payload().length;
+        this._on_data_in(subpacket);
 
         /*
         console.warn("received error from data_in callback; retrying", e);
@@ -920,6 +920,10 @@ class Offer extends _Eventer {
 
         this._Add_event("input");
         this._Add_event("complete");
+
+        //Register this first so that application handlers receive
+        //the updated offset.
+        this.on("input", this._input_handler);
     }
 
     /**
@@ -970,8 +974,6 @@ class Offer extends _Eventer {
         }
 
         this._input_handler_mode = opts.on_input || DEFAULT_RECEIVE_INPUT_MODE;
-
-        this.on("input", this._input_handler);
 
         return this._accept_func(this._file_offset).then( this._get_spool.bind(this) );
     }
