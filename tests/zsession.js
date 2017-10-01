@@ -77,6 +77,75 @@ function _init(async) {
     receiver.set_sender(receiver_sender);
 }
 
+test('Offer events', (t) => {
+    _init();
+
+    var inputs = [];
+    var completed = false;
+
+    var r_pms = receiver.start().then( (offer) => {
+        t.deepEquals(
+            offer.get_details(),
+            {
+                name: "my file",
+                size: 32,
+                mode: null,
+                mtime: null,
+                serial: null,
+                files_remaining: null,
+                bytes_remaining: null,
+            },
+            'get_details() returns expected values'
+        );
+
+        offer.on("input", (payload) => {
+            inputs.push(
+                {
+                    offset: offer.get_offset(),
+                    payload: payload,
+                }
+            );
+        } );
+
+        offer.on("complete", () => { completed = true });
+
+        return offer.accept();
+    } );
+
+    var s_pms = sender.send_offer(
+        { name: "my file", size: 32 }
+    ).then( (sender_xfer) => {
+        sender_xfer.send( [1, 2, 3] );
+        sender_xfer.send( [4, 5, 6, 7] );
+        sender_xfer.end( [8, 9] ).then( () => {
+            return sender.close();
+        } );
+    } );
+
+    return Promise.all( [ r_pms, s_pms ] ).then( () => {
+        t.deepEquals(
+            inputs,
+            [
+                {
+                    payload: [1, 2, 3],
+                    offset: 3,
+                },
+                {
+                    payload: [4, 5, 6, 7],
+                    offset: 7,
+                },
+                {
+                    payload: [8, 9],
+                    offset: 9,
+                },
+            ],
+            'Offer “input” events',
+        );
+
+        t.ok( completed, 'Offer “complete” event' );
+    } );
+} );
+
 test('receive one, promises', (t) => {
     _init();
 
