@@ -781,11 +781,11 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
     //----------------------------------------------------------------------
     //events
 
-    _on_file_end(subpacket) {
+    _on_file_end() {
         this._Happen("file_end");
 
         if (this._current_transfer) {
-            this._current_transfer._Happen("complete", subpacket);
+            this._current_transfer._Happen("complete");
             this._current_transfer = null;
         }
     }
