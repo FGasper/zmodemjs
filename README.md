@@ -73,6 +73,15 @@ piece of the above; one potential implementation might look like:
 zmodem.js is a JavaScript implementation of the ZMODEM
 file transfer protocol, which facilitates file transfers via a terminal.
 
+# DEMONSTRATION
+
+* `git clone https://github.com/FGasper/xterm.js`
+* `cd xterm.js`
+* `git checkout zmodem`
+* `git submodule update --init`
+* `npm install`
+* `npm start`
+
 # STATUS
 
 This library is ALPHA quality. Bugs are not unlikely; also, interfaces
