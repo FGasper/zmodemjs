@@ -43,5 +43,7 @@
     "url": "https://github.com/FGasper/zmodemjs/issues"
   },
   "homepage": "https://github.com/FGasper/zmodemjs#readme",
-  "dependencies": {}
+  "dependencies": {
+    "crc-32": "^1.1.1"
+  }
 }
