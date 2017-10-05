@@ -4,7 +4,10 @@
 
 var tape = require('blue-tape');
 
-global.Zmodem = require('./lib/zmodem');
+var Zmodem = Object.assign(
+    {},
+    require('../src/zcrc')
+);
 
 var zcrc = Zmodem.CRC;
 

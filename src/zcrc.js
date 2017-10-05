@@ -4,6 +4,7 @@ var Zmodem = module.exports;
 
 Object.assign(
     Zmodem,
+    require("./zerror"),
     require("./encode")
 );
 
@@ -213,7 +214,7 @@ Zmodem.CRC = {
      *      an array of octet values.
      */
     verify16: function verify16(bytes_arr, got) {
-        return __verify( crc16(bytes_arr), got );
+        return __verify( this.crc16(bytes_arr), got );
     },
 
     /**
@@ -228,7 +229,7 @@ Zmodem.CRC = {
      */
     verify32: function verify32(bytes_arr, crc) {
         try {
-            __verify( crc32(bytes_arr), crc );
+            __verify( this.crc32(bytes_arr), crc );
         }
         catch(err) {
             err.input = bytes_arr.slice(0);
