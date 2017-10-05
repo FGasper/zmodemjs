@@ -4,7 +4,7 @@
 
 global.Zmodem = require('./lib/zmodem');
 
-const tape = require('tape'),
+const tape = require('blue-tape'),
     TYPE_CHECKS = {
         aborted: [ [] ],
         peer_aborted: [],

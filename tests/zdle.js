@@ -2,7 +2,7 @@
 
 "use strict";
 
-var tape = require('tape');
+var tape = require('blue-tape');
 
 global.Zmodem = require('./lib/zmodem');
 const helper = require('./lib/testhelp');

@@ -2,7 +2,7 @@
 
 "use strict";
 
-const tape = require('tape');
+const tape = require('blue-tape');
 
 const testhelp = require('./lib/testhelp');
 

@@ -2,7 +2,7 @@
 
 "use strict";
 
-var tape = require('tape');
+var tape = require('blue-tape');
 
 var helper = require('./lib/testhelp');
 
