@@ -5,9 +5,7 @@
   "devDependencies": {
     "babel-minify-webpack-plugin": "^0.2.0",
     "blue-tape": "^1.0.0",
-    "glob-fs": "^0.1.7",
-    "jake": "^8.0.15",
-    "jsdoc-api": "^4.0.0",
+    "jsdoc-webpack-plugin": "^0.0.2",
     "text-encoding": "^0.6.4",
     "tmp": "0.0.33",
     "webpack": "^3.6.0",
