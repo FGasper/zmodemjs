@@ -1,6 +1,14 @@
-
-( function() {
 "use strict";
+
+var Zmodem = module.exports;
+
+Object.assign(
+    Zmodem,
+    require("./zcrc"),
+    require("./zdle"),
+    require("./zmlib"),
+    require("./zerror")
+);
 
 const
     ZCRCE = 0x68,    // 'h', 104, frame ends, header packet follows
@@ -231,5 +239,3 @@ SUBPACKET_BUILDER = {
     no_end_no_ack: ZNoEndNoAckSubpacket,
     no_end_ack: ZNoEndAckSubpacket,
 };
-
-}());

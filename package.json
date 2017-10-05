@@ -5,6 +5,7 @@
   "main": "zmodem.js",
   "devDependencies": {
     "babel-minify": "^0.2.0",
+    "babel-minify-webpack-plugin": "^0.2.0",
     "blue-tape": "^1.0.0",
     "concat": "^1.0.3",
     "jake": "^8.0.15",
@@ -47,5 +48,8 @@
     "url": "https://github.com/FGasper/zmodemjs/issues"
   },
   "homepage": "https://github.com/FGasper/zmodemjs#readme",
-  "dependencies": {}
+  "dependencies": {
+    "global": "^4.3.2",
+    "webpack": "^3.6.0"
+  }
 }

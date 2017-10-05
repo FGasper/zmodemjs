@@ -1,9 +1,11 @@
-/** Validation logic for zmodem.js
- *
- * @module Validation
- */
-Zmodem.Validation = ( function() {
 "use strict";
+
+var Zmodem = module.exports;
+
+Object.assign(
+    Zmodem,
+    require("./zerror")
+);
 
 const LOOKS_LIKE_ZMODEM_HEADER = /\*\x18[AC]|\*\*\x18B/;
 
@@ -17,7 +19,11 @@ function _validate_number(key, value) {
     }
 }
 
-return {
+/** Validation logic for zmodem.js
+ *
+ * @module Validation
+ */
+Zmodem.Validation = {
 
     /**
      * Validates and normalizes a set of parameters for an offer to send.
@@ -122,5 +128,3 @@ return {
         return params;
     },
 };
-
-})();

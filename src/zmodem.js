@@ -1,5 +1,5 @@
-Zmodem = {};
-
-if ( typeof module === "object" ) {
-    module.exports = Zmodem;
-}
+Object.assign(
+    module.exports,
+    require("./zsentry"),
+    require("./zbrowser"),
+);

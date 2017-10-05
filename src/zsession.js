@@ -1,11 +1,23 @@
+"use strict";
+
+var Zmodem = module.exports;
+
 /**
  * This is where the protocol-level logic lives: the interaction of ZMODEM
  * headers and subpackets. The logic here is not unlikely to need tweaking
  * as little edge cases crop up.
  */
 
-( function() {
-"use strict";
+Object.assign(
+    Zmodem,
+    require("./encode"),
+    require("./zdle"),
+    require("./zmlib"),
+    require("./zheader"),
+    require("./zsubpacket"),
+    require("./zvalidation"),
+    require("./zerror")
+);
 
 const
     //pertinent to this module
@@ -1501,5 +1513,3 @@ Object.assign(
         type: "send",
     }
 );
-
-}());

@@ -1,7 +1,11 @@
-//needs:
-//  ZMLIB
-( function() {
 "use strict";
+
+var Zmodem = module.exports;
+
+Object.assign(
+    Zmodem,
+    require("./zmlib")
+);
 
 //encode() variables - declare them here so we don’t
 //create them in the function.
@@ -214,5 +218,3 @@ Zmodem.ZDLE = class ZmodemZDLE {
         this._zdle_table = zsendline_tab;
     }
 }
-
-}());

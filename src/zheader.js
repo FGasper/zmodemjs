@@ -1,8 +1,15 @@
-//----------------------------------------------------------------------
-// Header classes
-
-( function() {
 "use strict";
+
+var Zmodem = module.exports;
+
+Object.assign(
+    Zmodem,
+    require("./encode"),
+    require("./zdle"),
+    require("./zmlib"),
+    require("./zcrc"),
+    require("./zerror")
+);
 
 const ZPAD = '*'.charCodeAt(0),
     ZBIN = 'A'.charCodeAt(0),
@@ -758,5 +765,3 @@ function _parse_hex(bytes_arr) {
 }
 
 Zmodem.Header.parse_hex = _parse_hex;
-
-}());

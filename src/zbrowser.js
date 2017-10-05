@@ -1,9 +1,11 @@
-/** Browser-specific tools
- *
- * @module Browser
- */
-Zmodem.Browser = ( function() {
 "use strict";
+
+var Zmodem = module.exports;
+
+Object.assign(
+    Zmodem,
+    require("./zerror")
+);
 
 function _check_aborted(session) {
     if (session.aborted()) {
@@ -11,7 +13,11 @@ function _check_aborted(session) {
     }
 }
 
-return {
+/** Browser-specific tools
+ *
+ * @module Browser
+ */
+Zmodem.Browser = {
     /**
     * Send a batch of files in sequence. The session is left open
     * afterward, which allows for more files to be sent if desired.
@@ -169,5 +175,3 @@ return {
         document.body.removeChild(el);
     },
 };
-
-}());
