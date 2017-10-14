@@ -2,9 +2,12 @@
 
 var Zmodem = module.exports;
 
+//Make this usable without require.js or what not.
+window.Zmodem = Zmodem;
+
 Object.assign(
     Zmodem,
-    require("./zerror")
+    require("./zmodem")
 );
 
 function _check_aborted(session) {

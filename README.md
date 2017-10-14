@@ -295,11 +295,6 @@ Likewise, for this reason some of the session-level logic is exposed only
 through the Transfer and Offer objects. The Session creates these
 internally then exposes them via callback
 
-The library’s most anticipated use case is to have ZMODEM in a browser;
-hence, the “default” `zmodem-min.js` file contains the browser-specific
-logic from the repository’s `src/zbrowser.js`. The `zmodem-pure*` files
-omit the browser logic and are recommended for non-browser environments.
-
 # SOURCES
 
 ZMODEM is not standardized in a nice, clean, official RFC like DNS or HTTP;

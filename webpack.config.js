@@ -7,8 +7,8 @@ const JsDocPlugin = require('jsdoc-webpack-plugin');
 
 module.exports = {
     entry: {
-        zmodem: [ "./index.js", "./src/zbrowser.js" ],
-        "zmodem.devel": [ "./index.js", "./src/zbrowser.js" ],
+        zmodem: [ "./src/zmodem_browser.js" ],
+        "zmodem.devel": [ "./src/zmodem_browser.js" ],
     },
     output: {
         path: path.resolve( __dirname, "webpack" ),
