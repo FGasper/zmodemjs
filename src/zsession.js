@@ -26,7 +26,20 @@ const
     //We ourselves don’t need ESCCTL, so we don’t send it;
     //however, we always expect to receive it in ZRINIT.
     //See _ensure_receiver_escapes_ctrl_chars() for more details.
-    ZRINIT_FLAGS = [ "CANFDX", "CANOVIO" ],
+    ZRINIT_FLAGS = [
+        "CANFDX",   //full duplex
+        "CANOVIO",  //overlap I/O
+
+        //lsz has a buffer overflow bug that shows itself when:
+        //
+        //  - 16-bit CRC is used, and
+        //  - lsz receives the abort sequence while sending a file
+        //
+        //To avoid this, we just tell lsz to use 32-bit CRC
+        //even though there is otherwise no reason. This ensures that
+        //unfixed lsz versions will avoid the buffer overflow.
+        "CANFC32",
+    ],
 
     //We do this because some WebSocket shell servers
     //(e.g., xterm.js’s demo server) enable the IEXTEN termios flag,
