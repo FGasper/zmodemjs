@@ -223,9 +223,15 @@ today over remote connections. Because the forseeable use of zmodem.js
 is either over TCP or a local socket—both of which are reliable—it seems
 safe to assume that zmodem.js will not need to implement error correction.
 
-* CRC-16 is the default, though the library does include CRC-32 logic.
-The entire CRC apparatus is unneeded over TCP, but ZMODEM doesn’t allow us
-to dispense with it, so we might as well do the simpler variant.
+* zmodem.js sends with CRC-16 by default. Ideally we would just use CRC-16
+for everything, but lsz 0.12.20 has a [buffer overflow bug](https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch) that rears its
+head when you try to abort a ZMODEM session in the middle of a CRC-16 file
+transfer. To avoid this bug, zmodem.js advertises CRC-32 support when it
+receives a file, which makes lsz avoid the buffer overflow bug by using
+CRC-32.
+
+The bug is reported, incidentally, and a fix is expected (nearly 20 years
+after the last official lrzsz release!).
 
 * There is no XMODEM/YMODEM fallback.
 
@@ -237,10 +243,6 @@ because they happen between ZMODEM headers; however, it’s possible to
 ZMODEM header. So don’t do that. :-P
 
 # IMPLEMENTATION NOTES
-
-* There is an unfortunate buffer overflow bug that rears its head when
-you try to abort a ZMODEM session in the middle of a file transfer. There’s
-not much to be done about this except distribute [the patch](https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch) as widely as is feasible.
 
 * I’ve had success integrating zmodem.js with
 [xterm.js](https://xtermjs.org).

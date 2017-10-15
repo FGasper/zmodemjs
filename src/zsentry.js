@@ -8,53 +8,6 @@ Object.assign(
     require("./zsession")
 );
 
-/**
- * Logic that negotiates the boundary between normal terminal
- * traffic and ZMODEM: we look for the tell-tale signs of a ZMODEM
- * transfer and allow the client to determine whether it’s really
- * ZMODEM or not.
- *
- * This logic is not unlikely to need tweaking, and it can never
- * be fully bulletproof; if it could be bulletproof it would be
- * simpler since there wouldn’t need to be the .confirm()/.deny()
- * step.
- *
- * One thing you could do to make things a bit simpler *is* just
- * to make that assumption for your users--i.e., to .confirm()
- * Detection objects automatically. That’ll be one less step
- * for the user, but an unaccustomed user might find that a bit
- * confusing.
- *
- * Workflow:
- *  - parse all input with .consume(). As long as nothing looks
- *      like ZMODEM, all the traffic will go to to_terminal().
- *
- *  - when a “tell-tale” sequence of bytes arrives, we create a
- *      Detection object and pass it to the “on_detect” handler.
- *
- *  - Either .confirm() or .deny() with the Detection object.
- *      This is the user’s chance to say, “yeah, I know those
- *      bytes look like ZMODEM, but they’re not. So back off!”
- *
- *      If you .confirm(), the Session object is returned, and
- *      further input that goes to the Sentry’s .consume() will
- *      go to the (now-active) Session object.
- *
- *  - Sometimes additional traffic arrives that makes it apparent
- *      that no ZMODEM session is intended to start; in this case,
- *      the Sentry marks the Detection as “stale” and calls the
- *      `on_retract` handler. Any attempt from here to .confirm()
- *      on the Detection object will prompt an exception.
- *
- *      (This “retraction” behavior will only happen prior to
- *      .confirm() or .deny() being called on the Detection object.
- *      Beyond that point, either the Session has to deal with the
- *      “garbage”, or it’s back to the terminal anyway.
- *
- *  - Once the Session object is done, the Sentry will again send
- *      all traffic to to_terminal().
- */
-
 const
     MIN_ZM_HEX_START_LENGTH = 20,
     MAX_ZM_HEX_START_LENGTH = 21,
@@ -149,11 +102,57 @@ class Detection {
 }
 
 /**
-* Class that parses an input stream for the beginning of a
-* ZMODEM session. This is the “mother” class for zmodem.js;
-* all other class instances are created, directly or indirectly,
-* by an instance of this class.
-*/
+ * Class that parses an input stream for the beginning of a
+ * ZMODEM session. We look for the tell-tale signs
+ * of a ZMODEM transfer and allow the client to determine whether
+ * it’s really ZMODEM or not.
+ *
+ * This is the “mother” class for zmodem.js;
+ * all other class instances are created, directly or indirectly,
+ * by an instance of this class.
+ *
+ * This logic is not unlikely to need tweaking, and it can never
+ * be fully bulletproof; if it could be bulletproof it would be
+ * simpler since there wouldn’t need to be the .confirm()/.deny()
+ * step.
+ *
+ * One thing you could do to make things a bit simpler *is* just
+ * to make that assumption for your users--i.e., to .confirm()
+ * Detection objects automatically. That’ll be one less step
+ * for the user, but an unaccustomed user might find that a bit
+ * confusing. It’s also then possible to have a “false positive”:
+ * a text stream that contains a ZMODEM initialization string but
+ * isn’t, in fact, meant to start a ZMODEM session.
+ *
+ * Workflow:
+ *  - parse all input with .consume(). As long as nothing looks
+ *      like ZMODEM, all the traffic will go to to_terminal().
+ *
+ *  - when a “tell-tale” sequence of bytes arrives, we create a
+ *      Detection object and pass it to the “on_detect” handler.
+ *
+ *  - Either .confirm() or .deny() with the Detection object.
+ *      This is the user’s chance to say, “yeah, I know those
+ *      bytes look like ZMODEM, but they’re not. So back off!”
+ *
+ *      If you .confirm(), the Session object is returned, and
+ *      further input that goes to the Sentry’s .consume() will
+ *      go to the (now-active) Session object.
+ *
+ *  - Sometimes additional traffic arrives that makes it apparent
+ *      that no ZMODEM session is intended to start; in this case,
+ *      the Sentry marks the Detection as “stale” and calls the
+ *      `on_retract` handler. Any attempt from here to .confirm()
+ *      on the Detection object will prompt an exception.
+ *
+ *      (This “retraction” behavior will only happen prior to
+ *      .confirm() or .deny() being called on the Detection object.
+ *      Beyond that point, either the Session has to deal with the
+ *      “garbage”, or it’s back to the terminal anyway.
+ *
+ *  - Once the Session object is done, the Sentry will again send
+ *      all traffic to to_terminal().
+ */
 Zmodem.Sentry = class ZmodemSentry {
 
     /**
@@ -215,6 +214,8 @@ Zmodem.Sentry = class ZmodemSentry {
      *      is sent to output.
      *      If the ZMODEM session ends, any post-ZMODEM part of the input
      *      is sent to output.
+     *
+     *  @param {number[] | ArrayBuffer} input - Octets to parse as input.
      */
     consume(input) {
         if (!(input instanceof Array)) {
