@@ -99,7 +99,9 @@ Zmodem.CRC = {
      * @returns {Array} crc - The CRC, expressed as an array of octet values.
      */
     crc32: function crc32(octet_nums) {
-        return Zmodem.ENCODELIB.pack_u32_le( CRC32_MOD.buf(octet_nums) );
+        return Zmodem.ENCODELIB.pack_u32_le(
+            CRC32_MOD.buf(octet_nums) >>> 0     //bit-shift to get unsigned
+        );
     },
 
     /**

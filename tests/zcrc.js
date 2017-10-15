@@ -62,17 +62,24 @@ tape('verify16', function(t) {
 //----------------------------------------------------------------------
 
 tape('crc32', function(t) {
-    t.deepEqual(
-        zcrc.crc32( [ 4, 0, 0, 0, 0 ] ),
-        [ 0xdd, 0x51, 0xa2, 0x33 ],
-        'crc32 - first test'
-    );
+    const tests = [
+        [ [ 4, 0, 0, 0, 0 ], [ 0xdd, 0x51, 0xa2, 0x33 ] ],
+        [ [ 11, 17, 0, 0, 0 ], [ 0xf6, 0xf6, 0x57, 0x59 ] ],
+        [ [ 3, 0, 0, 0, 0 ], [ 205, 141, 130, 129 ] ],
+    ];
+//    } [ 3, 0, 0, 0, 0 ] [ 205, 141, 131, -127 ]
+//2172816845
+//crc32 [ 3, 0, 0, 0, 0 ] -2122150451
 
-    t.deepEqual(
-        zcrc.crc32( [ 11, 17, 0, 0, 0 ] ),
-        [ 0xf6, 0xf6, 0x57, 0x59 ],
-        'crc32 - second test'
-    );
+    tests.forEach( (cur_t) => {
+        let [ input, output ] = cur_t;
+
+        t.deepEqual(
+            zcrc.crc32(input),
+            output,
+            "crc32: " + input.join(", ")
+        );
+    } );
 
     t.end();
 } );
