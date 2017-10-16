@@ -91,11 +91,14 @@ may change from time to time.
 
 The basic workflow is:
 
-1. Create a `Zmodem.Sentry` object that scans all input for
-a ZMODEM initialization string.
+1. Create a `Zmodem.Sentry` object. This object must scan all input for
+a ZMODEM initialization string. See `zsentry.js`’s documentation for more
+details.
 
-2. Once that initialization is found, a `Zmodem.Session` is
-created. Send all input to that object until it’s finished.
+2. Once that initialization is found, the `on_detect` event is fired
+with a `Detection` object as parameter. At this point you can `deny()`
+that Detection or `confirm()` it; the latter will return a Session
+object.
 
 3. Now you do the actual file transfer(s):
 
