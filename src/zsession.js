@@ -868,6 +868,16 @@ var Transfer_Offer_Mixin = {
         return Object.assign( {}, this._file_info );
     },
 
+    /**
+     * Returns a parse of the ZFILE header’s payload.
+     *
+     * @returns {Object} Members are:
+     *
+     * - `conversion` (string | undefined)
+     * - `management` (string | undefined)
+     * - `transfer` (string | undefined)
+     * - `sparse` (boolean)
+     */
     get_options: function get_options() {
         return Object.assign( {}, this._zfile_opts );
     },
