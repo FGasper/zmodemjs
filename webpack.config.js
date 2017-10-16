@@ -11,7 +11,7 @@ module.exports = {
         "zmodem.devel": [ "./src/zmodem_browser.js" ],
     },
     output: {
-        path: path.resolve( __dirname, "webpack" ),
+        path: path.resolve( __dirname, "dist" ),
         filename: "[name].js",
     },
     plugins: [

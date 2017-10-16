@@ -50,7 +50,7 @@ function _updcrc(cp, crc) {
     if (!_crctab) _compute_crctab();
 
     return(
-        crctab[((crc >> 8) & 255)]
+        _crctab[((crc >> 8) & 255)]
         ^ ((255 & crc) << 8)
         ^ cp
     );
