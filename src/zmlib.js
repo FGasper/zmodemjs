@@ -14,7 +14,7 @@ const
 /**
  * Tools and constants that are useful for ZMODEM.
  *
- * @module ZMLIB
+ * @exports ZMLIB
  */
 Zmodem.ZMLIB = {
 

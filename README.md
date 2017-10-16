@@ -151,9 +151,10 @@ most modem use was for terminal applications, especially
 [BBS](https://en.wikipedia.org/wiki/Bulletin_board_system)es.
 (This was how, for example,
 popular shareware games like [Wolfenstein 3D](http://3d.wolfenstein.com)
-were often distributed.) With the growth of the World Wide Web in the
-mid-1990s remote terminals became a niche application, and the problem that
-ZMODEM solved became a much less important one.
+were often distributed.) The World Wide Web in the
+mid-1990s, however, proved a more convenient way to accomplish most of
+what BBSes were useful for, as a result of which the problem that ZMODEM
+solved became a much less important one.
 
 ZMODEM stuck around, though, as it remained a convenient solution
 for terminal users who didn’t want open a separate session to transfer a
@@ -165,22 +166,24 @@ many systems today.
 
 Where `lrzsz` can’t reach, though, is terminals that don’t have command-line
 access—such as terminals that run in JavaScript. Now that
-[WebSocket](https://en.wikipedia.org/wiki/WebSocket) makes JavaScript-based
-terminals a reality, there is a use case for a JavaScript
+[WebSocket](https://en.wikipedia.org/wiki/WebSocket) makes real-time
+applications like terminals possible in a web browser,
+there is a use case for a JavaScript
 implementation of ZMODEM to allow file transfers in this context.
 
 # GENERAL FLOW OF A ZMODEM SESSION:
 
 The following is an overview of an error-free ZMODEM session.
 
-0. If you call the `sz` command (or equivalent) that command will send
+0. If you call the `sz` command (or equivalent), that command will send
 a special ZRQINIT “pre-header” to signal your terminal to be a ZMODEM
 receiver.
 
-1. The receiver sends a ZRINIT header.
+1. The receiver, upon recognizing the ZRQINIT header, responds with
+a ZRINIT header.
 
-2. The sender sends a ZFILE header along with information about the file
-and, optionally, the rest of the intended batch of files.
+2. The sender sends a ZFILE header along with information about the file.
+(This may also include the size and file count for the entire batch of files.)
 
 3. The recipient either accepts the file or skips it.
 
@@ -188,7 +191,8 @@ and, optionally, the rest of the intended batch of files.
 contents. At the end the sender sends a ZEOF header to let the recipient
 know this file is done.
 
-5. The recipient sends another ZRINIT header.
+5. The recipient sends another ZRINIT header. This lets the sender know that
+the recipient confirms receipt of the entire file.
 
 6. Repeat steps 2-5 until the sender has no more files to send.
 
@@ -202,13 +206,13 @@ Here are some notes about this particular implementation.
 
 Particular notes:
 
-* We use a maximum data subpacket size of 8 KiB (8,192 bytes). While
+* We send with a maximum data subpacket size of 8 KiB (8,192 bytes). While
 the ZMODEM specification stipulates a maximum of 1 KiB, `lrzsz` accepts
 the larger size, and it seems to have become a de facto standard extension
 to the protocol.
 
-* Remote command execution (i.e., ZCOMMAND) is unimplemented. Besides being
-a glaring security hole, it probably wouldn’t work in web browsers.
+* Remote command execution (i.e., ZCOMMAND) is unimplemented. It probably
+wouldn’t work in browsers, which is zmodem.js’s principal use case.
 
 * No file translations are done. (Unix/Windows line endings are a
 future feature possibility.)
@@ -309,11 +313,19 @@ As part of writing zmodem.js I’ve culled together various resources
 about the protocol. As far as I know these are the best sources for
 information on ZMODEM.
 
-Two documents that describe ZMODEM are included with this distribution.
+Two documents that describe ZMODEM are saved in the repository for reference.
 The first is the closest there is to an official ZMODEM specification:
 a description of the protocol from its author, Chuck Forsberg. The second
 seems to be based on the first and comes from
 [Jacques Mattheij](https://jacquesmattheij.com).
+
+**HISTORICAL:** The included `rzsz.zip` file (fetched from [ftp://archives.thebbs.org/file_transfer_protocols/](ftp://archives.thebbs.org/file_transfer_protocols/) on 16 October 2017)
+is the last public domain release
+from Forsberg. [http://freeware.nekochan.net/source/rzsz/](http://freeware.nekochan.net/source/rzsz/) has what is supposedly Forsberg’s last shareware release;
+I have not looked at it except for the README. I’m not sure of the
+copyright status of this software: Forsberg is deceased, and his company
+appears to be defunct. Regardless, neither it nor its public domain
+predecessor is likely in widespread use.
 
 Here are some other available ZMODEM implementations:
 
@@ -324,9 +336,6 @@ Here are some other available ZMODEM implementations:
     of its wide availability and its derivation from Forsberg’s original.
     If your server has the `rz` and `sz` commands, they’re probably
     from this package.
-
-    NB: I have not found Forsberg’s original “szrz” code. If you have this
-or know where to find it, please contact me.
 
 * [SyncTERM](http://syncterm.bbsdev.net)
 
@@ -349,24 +358,15 @@ or know where to find it, please contact me.
 
 # REQUIREMENTS
 
-There are no external library requirements; however, zmodem.js needs some
-fairly modern JavaScript APIs (or shims to emulate them):
+This library only supports modern browsers. There is no support for
+Internet Explorer or other older browsers planned.
 
-* You’ll probably need the `download` attribute on `<a>` elements to receive files.
-(Or Flash, I guess … *\<shudder\>*)
-
-* [TextEncoder](https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder)
-and [TextDecoder](https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder)
-
-* [ES6 Classes](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes)
-
-I’ve tried to stay away from dependence on other ES6 patterns in the
-production code, though the tests use them liberally.
+The tests have run successfully against node.js version 8.
 
 # DOCUMENTATION
 
 Besides this document, each module has inline [jsdoc](http://usejsdoc.org).
-You can see it by running `npm install` in the repository’s root directory;
+You can see it by running `yarn` in the repository’s root directory;
 the documentation will build in a newly-created `documentation` directory.
 
 # CONTRIBUTING
@@ -376,15 +376,21 @@ Contributions are welcome via
 
 # TODO
 
-* Implement newline conversions.
-
 * Teach send sessions to “fast-forward” so as to honor requests for
 append-style sessions.
+
+* Implement newline conversions.
 
 * Teach Session how to do and to handle pre-CRC checks.
 
 * Possible: command-line tool, if there’s demand for it, e.g., in
 environments where lrzsz can’t run.
+
+# KNOWN ISSUERS
+
+* In testing, Microsoft Edge appeared not to care what string was given
+to `<a>`’s `download` attribute; the saved filename was based on the
+browser’s internal Blob object URL instead.
 
 # COPYRIGHT
 

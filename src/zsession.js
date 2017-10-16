@@ -566,7 +566,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         return this._textdecoder.decode( new Uint8Array(octets) );
     }
 
-    _consume_ZFILE_data(subpacket) {
+    _consume_ZFILE_data(hdr, subpacket) {
         if (this._file_info) {
             throw "PROTOCOL: second ZFILE data subpacket received";
         }
@@ -594,7 +594,10 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             bytes_remaining: the_rest[5] ? parseInt( the_rest[5], 10 ) : null,
         };
 
+        console.log("ZFILE", hdr);
+
         var xfer = new Offer(
+            hdr.get_options(),
             this._file_info,
             this._accept.bind(this),
             this._skip.bind(this)
@@ -641,7 +644,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
                 ZFILE: function(hdr) {
                     this._next_subpacket_handler = function(subpacket) {
                         this._next_subpacket_handler = null;
-                        this._consume_ZFILE_data(subpacket);
+                        this._consume_ZFILE_data(hdr, subpacket);
                         this._Happen("offer", this._current_transfer);
                         res(this._current_transfer);
                     };
@@ -848,7 +851,7 @@ Object.assign(
  * @property {number} [files_remaining] - Inclusive of the current file,
  *  so this value is never less than 1.
  *
- * @property {number} [files_remaining] - Inclusive of the current file.
+ * @property {number} [bytes_remaining] - Inclusive of the current file.
  */
 
 /**
@@ -863,6 +866,10 @@ var Transfer_Offer_Mixin = {
      */
     get_details: function get_details() {
         return Object.assign( {}, this._file_info );
+    },
+
+    get_options: function get_options() {
+        return Object.assign( {}, this._zfile_opts );
     },
 
     /**
@@ -935,9 +942,10 @@ class Offer extends _Eventer {
     /**
      * Not called directly.
      */
-    constructor(file_info, accept_func, skip_func) {
+    constructor(zfile_opts, file_info, accept_func, skip_func) {
         super();
 
+        this._zfile_opts = zfile_opts;
         this._file_info = file_info;
 
         this._accept_func = accept_func;

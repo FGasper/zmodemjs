@@ -21,7 +21,7 @@ function _validate_number(key, value) {
 
 /** Validation logic for zmodem.js
  *
- * @module Validation
+ * @exports Validation
  */
 Zmodem.Validation = {
 

@@ -408,12 +408,17 @@ ZACK_HEADER.prototype._hex_header_ending = HEX_HEADER_CRLF;
 
 const ZFILE_VALUES = {
 
-    //ZF0 (i.e., last byte)
-    conversion: [
+    //ZF3 (i.e., first byte)
+    extended: {
+        sparse: 0x40,   //ZXSPARS
+    },
+
+    //ZF2
+    transport: [
         undefined,
-        "binary",           //ZCBIN
-        "text",             //ZCNL
-        "resume",           //ZCRESUM
+        "compress",         //ZTLZW
+        "encrypt",          //ZTCRYPT
+        "rle",              //ZTRLE
     ],
 
     //ZF1
@@ -429,18 +434,13 @@ const ZFILE_VALUES = {
         "rename",           //ZF1_ZMPROT
     ],
 
-    //ZF2
-    transport: [
+    //ZF0 (i.e., last byte)
+    conversion: [
         undefined,
-        "compress",         //ZTLZW
-        "encrypt",          //ZTCRYPT
-        "rle",              //ZTRLE
+        "binary",           //ZCBIN
+        "text",             //ZCNL
+        "resume",           //ZCRESUM
     ],
-
-    //ZF3
-    extended: {
-        sparse: 0x40,   //ZXSPARS
-    },
 };
 
 const ZFILE_ORDER = ["extended", "transport", "management", "conversion"];
@@ -457,10 +457,6 @@ class ZFILE_HEADER extends Zmodem.Header {
         var opts = {
             sparse: !!(this._bytes4[0] & ZXSPARS),
         };
-
-        var extended_unknown = this._bytes4[0] ^ ZXSPARS;
-        if (extended_unknown) {
-        }
 
         var bytes_copy = this._bytes4.slice(0);
 

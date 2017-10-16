@@ -18,42 +18,43 @@ function _check_aborted(session) {
 
 /** Browser-specific tools
  *
- * @module Browser
+ * @exports Browser
  */
 Zmodem.Browser = {
+
     /**
-    * Send a batch of files in sequence. The session is left open
-    * afterward, which allows for more files to be sent if desired.
-    *
-    * @param {Zmodem.Session} session - The send session
-    *
-    * @param {FileList|Array} files - A list of File objects
-    *
-    * @param {Object} [options]
-    * @param {Function} [options.on_offer_response] - Called when an
-    * offer response arrives. Arguments are:
-    *
-    * - (File) - The File object that corresponds to the offer.
-    * - (Transfer|undefined) - If the receiver accepts the offer, then
-    * this is a Transfer object; otherwise it’s undefined.
-    *
-    * @param {Function} [options.on_progress] - Called immediately
-    * after a chunk of a file is sent. Arguments are:
-    *
-    * - (File) - The File object that corresponds to the file.
-    * - (Transfer) - The Transfer object for the current transfer.
-    * - (Uint8Array) - The chunk of data that was just loaded from disk
-    * and sent to the receiver.
-    *
-    * @param {Function} [options.on_file_complete] - Called immediately
-    * after the last file packet is sent. Arguments are:
-    *
-    * - (File) - The File object that corresponds to the file.
-    * - (Transfer) - The Transfer object for the now-completed transfer.
-    *
-    * @return {Promise} A Promise that fulfills when the batch is done.
-    *      Note that skipped files are not considered an error condition.
-    */
+     * Send a batch of files in sequence. The session is left open
+     * afterward, which allows for more files to be sent if desired.
+     *
+     * @param {Zmodem.Session} session - The send session
+     *
+     * @param {FileList|Array} files - A list of File objects
+     *
+     * @param {Object} [options]
+     * @param {Function} [options.on_offer_response] - Called when an
+     * offer response arrives. Arguments are:
+     *
+     * - (File) - The File object that corresponds to the offer.
+     * - (Transfer|undefined) - If the receiver accepts the offer, then
+     * this is a Transfer object; otherwise it’s undefined.
+     *
+     * @param {Function} [options.on_progress] - Called immediately
+     * after a chunk of a file is sent. Arguments are:
+     *
+     * - (File) - The File object that corresponds to the file.
+     * - (Transfer) - The Transfer object for the current transfer.
+     * - (Uint8Array) - The chunk of data that was just loaded from disk
+     * and sent to the receiver.
+     *
+     * @param {Function} [options.on_file_complete] - Called immediately
+     * after the last file packet is sent. Arguments are:
+     *
+     * - (File) - The File object that corresponds to the file.
+     * - (Transfer) - The Transfer object for the now-completed transfer.
+     *
+     * @return {Promise} A Promise that fulfills when the batch is done.
+     *      Note that skipped files are not considered an error condition.
+     */
     send_files: function send_files(session, files, options) {
         if (!options) options = {};
 
@@ -153,10 +154,11 @@ Zmodem.Browser = {
 
     /**
      * Prompt a user to save the given packets as a file by injecting an
-     * `<a>` element into the page and calling the DOM node’s `click()`
-     * method. The DOM node is removed immediately after.
+     * `<a>` element (with `display: none` styling) into the page and
+     * calling the element’s `click()`
+     * method. The element is removed immediately after.
      *
-     * @param {Array} packets - Same as the first argument to Blob’s constructor.
+     * @param {Array} packets - Same as the first argument to [Blob’s constructor](https://developer.mozilla.org/en-US/docs/Web/API/Blob).
      * @param {string} name - The name to give the file.
      */
     save_to_disk: function save_to_disk(packets, name) {
