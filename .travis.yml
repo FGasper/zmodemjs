@@ -6,4 +6,4 @@ node_js:
   - "node"
 before_install:
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install lrzsz; fi
-  - if [ $TRAVIS_OS_NAME = osx ]; then brew install lrzsz; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew update; brew install lrzsz; fi
