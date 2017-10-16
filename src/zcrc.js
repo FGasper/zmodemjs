@@ -31,10 +31,13 @@ function _compute_crctab() {
         var currByte = (divident << divident_shift) & crc_castmask;
 
         for (var bit = 0; bit < 8; bit++) {
-            currByte <<= 1;
 
             if ((currByte & crc_msbmask) !== 0) {
+                currByte <<= 1;
                 currByte ^= crc_polynomial;
+            }
+            else {
+                currByte <<= 1;
             }
         }
 
