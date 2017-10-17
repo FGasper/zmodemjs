@@ -78,7 +78,6 @@ file transfer protocol, which facilitates file transfers via a terminal.
 * `git clone https://github.com/FGasper/xterm.js`
 * `cd xterm.js`
 * `git checkout zmodem`
-* `git submodule update --init`
 * `npm install`
 * `npm start`
 
