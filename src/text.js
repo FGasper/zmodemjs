@@ -18,9 +18,6 @@ class _my_TextDecoder {
     }
 }
 
-var TEncoder = (typeof TextEncoder !== "undefined") && TextEncoder;
-var TDecoder = (typeof TextDecoder !== "undefined") && TextDecoder;
-
 var Zmodem = module.exports;
 
 /**
@@ -29,6 +26,6 @@ var Zmodem = module.exports;
  * @exports Text
  */
 Zmodem.Text = {
-    Encoder: TEncoder || _my_TextEncoder,
-    Decoder: TDecoder || _my_TextDecoder,
+    Encoder: (typeof TextEncoder !== "undefined") && TextEncoder || _my_TextEncoder,
+    Decoder: (typeof TextDecoder !== "undefined") && TextDecoder || _my_TextDecoder,
 };
