@@ -11,6 +11,7 @@ var Zmodem = module.exports;
 Object.assign(
     Zmodem,
     require("./encode"),
+    require("./text"),
     require("./zdle"),
     require("./zmlib"),
     require("./zheader"),
@@ -560,7 +561,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
 
     _octets_to_string(octets) {
         if (!this._textdecoder) {
-            this._textdecoder = new TextDecoder();
+            this._textdecoder = new Zmodem.Text.Decoder();
         }
 
         return this._textdecoder.decode( new Uint8Array(octets) );
@@ -1364,7 +1365,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
 
     _string_to_octets(string) {
         if (!this._textencoder) {
-            this._textencoder = new TextEncoder();
+            this._textencoder = new Zmodem.Text.Encoder();
         }
 
         var uint8arr = this._textencoder.encode(string);

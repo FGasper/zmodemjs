@@ -23,6 +23,7 @@ module.exports = {
         return octets;
     },
 
+    //This is meant NOT to do UTF-8 stuff since it handles \xXX.
     string_to_octets(string) {
         return string.split("").map( (c) => c.charCodeAt(0) );
     },
