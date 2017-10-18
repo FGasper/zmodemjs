@@ -18,8 +18,8 @@ class _my_TextDecoder {
     }
 }
 
-var TEncoder = (typeof TextEncoder === "undefined") ? null : TextEncoder;
-var TDecoder = (typeof TextDecoder === "undefined") ? null : TextDecoder;
+var TEncoder = (typeof TextEncoder !== "undefined") && TextEncoder;
+var TDecoder = (typeof TextDecoder !== "undefined") && TextDecoder;
 
 var Zmodem = module.exports;
 
