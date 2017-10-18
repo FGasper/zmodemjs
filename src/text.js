@@ -22,10 +22,12 @@ var Zmodem = module.exports;
 
 /**
  * A limited-use compatibility shim for TextEncoder and TextDecoder.
+ * Useful because both Edge and node.js still lack support for these
+ * as of October 2017.
  *
  * @exports Text
  */
 Zmodem.Text = {
-    Encoder: (typeof TextEncoder !== "undefined") && TextEncoder || _my_TextEncoder,
-    Decoder: (typeof TextDecoder !== "undefined") && TextDecoder || _my_TextDecoder,
+    Encoder: (typeof TextEncoder !== "undefined") ? TextEncoder : _my_TextEncoder,
+    Decoder: (typeof TextDecoder !== "undefined") ? TextDecoder : _my_TextDecoder,
 };
