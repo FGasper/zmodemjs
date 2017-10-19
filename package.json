@@ -6,6 +6,7 @@
     "babel-minify-webpack-plugin": "^0.2.0",
     "blue-tape": "^1.0.0",
     "jsdoc-webpack-plugin": "^0.0.2",
+    "text-encoding": "^0.6.4",
     "tmp": "0.0.33",
     "webpack": "^3.6.0",
     "which": "^1.3.0"

@@ -17,7 +17,6 @@ Object.assign(
     global,
     {
         Zmodem: require('./lib/zmodem'),
-        TextEncoder: require('text-encoding').TextEncoder,
     }
 );
 
@@ -40,7 +39,8 @@ let TEST_STRINGS = [
     "Hi diddle-ee, dee! A sailor’s life for me!",
 ];
 
-const text_encoder = new TextEncoder();
+var text_encoder = require('text-encoding').TextEncoder;
+text_encoder = new text_encoder();
 
 function _send_batch(t, batch, on_offer) {
     batch = batch.slice(0);

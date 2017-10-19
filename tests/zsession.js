@@ -7,9 +7,6 @@ const test = require('blue-tape');
 const helper = require('./lib/testhelp');
 global.Zmodem = require('./lib/zmodem');
 
-global.TextEncoder = require('text-encoding').TextEncoder;
-global.TextDecoder = require('text-encoding').TextDecoder;
-
 var ZSession = Zmodem.Session;
 
 var receiver, sender, sender_promise, received_file;

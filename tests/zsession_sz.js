@@ -20,7 +20,6 @@ Object.assign(
     global,
     {
         Zmodem: require('./lib/zmodem'),
-        TextDecoder: require('text-encoding').TextDecoder,
     }
 );
 
