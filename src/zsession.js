@@ -595,7 +595,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             bytes_remaining: the_rest[5] ? parseInt( the_rest[5], 10 ) : null,
         };
 
-        console.log("ZFILE", hdr);
+        //console.log("ZFILE", hdr);
 
         var xfer = new Offer(
             hdr.get_options(),
