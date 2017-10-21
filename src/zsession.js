@@ -769,13 +769,18 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
 
             var bound_make_promise_for_between_files = this._make_promise_for_between_files.bind(this);
 
-            this._next_header_handler = {
-                ZEOF: bound_make_promise_for_between_files,
-                ZDATA: function() {
-                    bound_make_promise_for_between_files();
-                    this._next_header_handler.ZEOF = bound_make_promise_for_between_files;
-                }.bind(this),
-            };
+            bound_make_promise_for_between_files();
+
+            Object.assign(
+                this._next_header_handler,
+                {
+                    ZEOF: bound_make_promise_for_between_files,
+                    ZDATA: function() {
+                        bound_make_promise_for_between_files();
+                        this._next_header_handler.ZEOF = bound_make_promise_for_between_files;
+                    }.bind(this),
+                }
+            );
         }
 
         this._accepted_offer = false;
