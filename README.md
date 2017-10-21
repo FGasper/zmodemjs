@@ -236,8 +236,8 @@ transfer. To avoid this bug, zmodem.js advertises CRC-32 support when it
 receives a file, which makes lsz avoid the buffer overflow bug by using
 CRC-32.
 
-The bug is reported, incidentally, and a fix is expected (nearly 20 years
-after the last official lrzsz release!).
+    The bug is reported, incidentally, and a fix is expected (nearly 20 years
+    after the last official lrzsz release!).
 
 * There is no XMODEM/YMODEM fallback.
 

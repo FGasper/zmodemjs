@@ -233,7 +233,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     }
 
     /**
-     * Whether the current Session has been aborted.
+     * Whether the current Session has been `abort()`ed.
      *
      * @returns {boolean} The aborted state.
      */
@@ -272,7 +272,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     _trim_leading_garbage_until_header() {
         var garbage = Zmodem.Header.trim_leading_garbage(this._input_buffer);
 
-        if (!this._throw_away_garbage_until_next_header && garbage.length) {
+        if (garbage.length) {
             if (this._Happen("garbage", garbage) === 0) {
                 console.debug(
                     "Garbage: ",
@@ -288,8 +288,6 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
 
         var new_header_and_crc = Zmodem.Header.parse(this._input_buffer);
         if (!new_header_and_crc) return;
-
-        this._throw_away_garbage_until_next_header = false;
 
         //console.log("RECEIVED HEADER", new_header_and_crc[0]);
 
@@ -376,9 +374,25 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     }
 
     /**
+     * **STOP!** You probably want to `skip()` an Offer rather than
+     * `abort()`. See below.
+     *
      * Abort the current session by sending the ZMODEM abort sequence.
      * This function will cause the Session object to refuse to send
      * any further data.
+     *
+     * Zmodem.Sentry is configured to send all output to the terminal
+     * after a session’s `abort()`. That could result in lots of
+     * ZMODEM garble being sent to the JavaScript terminal, which you
+     * probably don’t want.
+     *
+     * `skip()` on an Offer is better because Session will continue to
+     * discard data until we reach either another file or the
+     * sender-initiated end of the ZMODEM session. So no ZMODEM garble,
+     * and the session will end successfully.
+     *
+     * The behavior of `abort()` is subject to change since it’s not
+     * very useful as currently implemented.
      */
     abort() {
 
@@ -635,8 +649,6 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         }
     }
 
-    //get_file_offset() { return this._file_offset }
-
     _make_promise_for_between_files() {
         var sess = this;
 
@@ -751,12 +763,6 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             //
             //… which we do by asking for CRC32 from lsz.
 
-            //Treat anything prior to a header as garbage.
-            this._next_subpacket_handler = null;
-
-            //Throw away the garbage.
-            this._throw_away_garbage_until_next_header = true;
-
             //We might or might not have consumed ZDATA.
             //The sender also might or might not send a ZEOF before it
             //parses the ZSKIP. Thus, we want to ignore the following:
@@ -767,9 +773,15 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             //
             //… and just look for the next between-file header.
 
-            var bound_make_promise_for_between_files = this._make_promise_for_between_files.bind(this);
+            var bound_make_promise_for_between_files = function() {
 
-            bound_make_promise_for_between_files();
+                //Once this happens we fail on any received data packet.
+                //So it needs not to happen until we’ve received a header.
+                this._accepted_offer = false;
+                this._next_subpacket_handler = null;
+
+                this._make_promise_for_between_files();
+            }.bind(this);
 
             Object.assign(
                 this._next_header_handler,
@@ -783,7 +795,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             );
         }
 
-        this._accepted_offer = false;
+        //this._accepted_offer = false;
 
         this._file_info = null;
 
@@ -992,16 +1004,32 @@ class Offer extends _Eventer {
         this.on("input", this._input_handler);
     }
 
+    _verify_not_skipped() {
+        if (this._skipped) {
+            throw new Zmodem.Error("Already skipped!");
+        }
+    }
+
     /**
      * Tell the sender that you don’t want the offered file.
      *
+     * You can send this in lieu of `accept()` or after it, e.g.,
+     * if you find that the transfer is taking too long. Note that,
+     * if you `skip()` after you `accept()`, you’ll likely have to
+     * wait for buffers to clear out.
+     *
      */
-    skip() { return this._skip_func.apply(this, arguments) }
+    skip() {
+        this._verify_not_skipped();
+        this._skipped = true;
+
+        return this._skip_func.apply(this, arguments);
+    }
 
     /**
      * Tell the sender to send the offered file.
      *
-     * @param { Object } [opts] - Can be:
+     * @param {Object} [opts] - Can be:
      * @param {string} [opts.oninput=spool_uint8array] - Can be:
      *
      * - `spool_uint8array`: Stores the ZMODEM
@@ -1010,7 +1038,7 @@ class Offer extends _Eventer {
      *     which JavaScript can use to save the file to disk.
      *
      * - `spool_array`: Stores the ZMODEM packet payloads
-     *     as Array instances. Each value is a number.
+     *     as Array instances. Each value is an octet value.
      *
      * - (function): A handler that receives each payload
      *     as it arrives. The Offer object does not store
@@ -1022,6 +1050,13 @@ class Offer extends _Eventer {
      *      that contains those payloads.
      */
     accept(opts) {
+        this._verify_not_skipped();
+
+        if (this._accepted) {
+            throw new Zmodem.Error("Already accepted!");
+        }
+        this._accepted = true;
+
         if (!opts) opts = {};
 
         this._file_offset = opts.offset || 0;
