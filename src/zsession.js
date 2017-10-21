@@ -306,8 +306,8 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
 
         var handler = this._next_header_handler[ new_header.NAME ];
         if (!handler) {
-            console.error("Unhandled header!", new_header);
-            throw( "Unhandled header: " + new_header.NAME );
+            console.error("Unhandled header!", new_header, this._next_header_handler);
+            throw new Zmodem.Error( "Unhandled header: " + new_header.NAME );
         }
 
         this._next_header_handler = null;
@@ -396,13 +396,13 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         //FG: Since we assume our connection is reliable, there’s
         //no reason to send more than 5 CANs.
         this._sender(
-            ABORT_SEQUENCE.concat([
-                BS, BS, BS, BS, BS,
-            ])
+            ABORT_SEQUENCE.concat([ BS, BS, BS, BS, BS ])
         );
 
         this._aborted = true;
-        this._sender = function() { throw new Zmodem.Error('already_aborted') };
+        this._sender = function() {
+            throw new Zmodem.Error('already_aborted');
+        };
 
         this._on_session_end();
 
@@ -739,17 +739,17 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
 
         return ret;
     }
+
     _skip() {
         var ret = this._make_promise_for_between_files();
 
         if (this._accepted_offer) {
-            //XXX: For cancel of an in-progress transfer from lsz,
-            //it’s necessary to fix this buffer overflow bug:
+            //For cancel of an in-progress transfer from lsz,
+            //it’s necessary to avoid this buffer overflow bug:
             //
             //  https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch
             //
-            //… but there doesn’t seem to be an easy way to do that
-            //and have the fix widely distributed.
+            //… which we do by asking for CRC32 from lsz.
 
             //Treat anything prior to a header as garbage.
             this._next_subpacket_handler = null;
@@ -757,8 +757,25 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             //Throw away the garbage.
             this._throw_away_garbage_until_next_header = true;
 
-            //Ignore these.
-            this._next_header_handler.ZDATA = this._make_promise_for_between_files.bind(this);
+            //We might or might not have consumed ZDATA.
+            //The sender also might or might not send a ZEOF before it
+            //parses the ZSKIP. Thus, we want to ignore the following:
+            //
+            //  - ZDATA
+            //  - ZDATA then ZEOF
+            //  - ZEOF
+            //
+            //… and just look for the next between-file header.
+
+            var bound_make_promise_for_between_files = this._make_promise_for_between_files.bind(this);
+
+            this._next_header_handler = {
+                ZEOF: bound_make_promise_for_between_files,
+                ZDATA: function() {
+                    bound_make_promise_for_between_files();
+                    this._next_header_handler.ZEOF = bound_make_promise_for_between_files;
+                }.bind(this),
+            };
         }
 
         this._accepted_offer = false;

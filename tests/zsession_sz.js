@@ -96,12 +96,12 @@ tape('abort() during download', { timeout: 30000 }, (t) => {
     } );
 });
 
-//This only works when the zsdata() buffer overflow bug is fixed,
-//as demonstrated here:
+//This only works because we use CRC32 to receive. CRC16 in lsz has a
+//buffer overflow bug, fixed here:
 //
 //  https://github.com/gooselinux/lrzsz/blob/master/lrzsz-0.12.20.patch
 //
-tape.skip('skip() during download', { timeout: 30000 }, (t) => {
+tape('skip() during download', { timeout: 30000 }, (t) => {
     var filenames = [FILE1, helper.make_temp_file(12345678)];
     //filenames = ["-vvvvvvvvvvvvv", FILE1, _make_temp_file()];
 
@@ -135,6 +135,55 @@ tape.skip('skip() during download', { timeout: 30000 }, (t) => {
 
         t.ok( !!second_offer, "we got a 2nd offer after the first" );
     } );
+});
+
+tape('skip() - immediately - at end of download', { timeout: 30000 }, (t) => {
+    var filenames = [helper.make_temp_file(123)];
+
+    var started;
+
+    return _test_steps( t, filenames, [
+        (zsession) => {
+            if (!started) {
+                function offer_taker(offer) {
+                    offer.accept();
+                    offer.skip();
+                }
+                zsession.on("offer", offer_taker);
+                zsession.start();
+
+                started = true;
+            }
+        },
+    ] );
+});
+
+tape('skip() - after a parse - at end of download', { timeout: 30000 }, (t) => {
+    var filenames = [helper.make_temp_file(123)];
+
+    var the_offer, started, skipped;
+
+    return _test_steps( t, filenames, [
+        (zsession) => {
+            if (!started) {
+                function offer_taker(offer) {
+                    the_offer = offer;
+                    the_offer.accept();
+                }
+                zsession.on("offer", offer_taker);
+                zsession.start();
+                started = true;
+            }
+
+            return the_offer;
+        },
+        () => {
+            if (!skipped) {
+                the_offer.skip();
+                skipped = true;
+            }
+        },
+    ] );
 });
 
 //This doesn’t work because we automatically send ZFIN once we receive it,
