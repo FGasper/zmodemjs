@@ -272,10 +272,10 @@ the first header in a ZMODEM session will echo to the terminal. This
 explains the unsightly `**B0000…` stuff that you’ll see when you run
 either `rz` or `sz`.
 
-That header
-will include some form of line break; from `lrzsz` that means bytes 0x0d
-and 0x8a (not 0x0a). Your terminal might react oddly to that; if it does,
-try stripping out one or the other line ending character.
+    That header
+    will include some form of line break; from `lrzsz` that means bytes 0x0d
+    and 0x8a (not 0x0a). Your terminal might react oddly to that; if it does,
+    try stripping out one or the other line ending character.
 
 # PROTOCOL CHOICE
 
