@@ -321,6 +321,14 @@ Zmodem.Sentry = class ZmodemSentry {
         this._to_terminal(to_terminal);
     }
 
+    /**
+     * @return {Session|null} The sentry’s current Session object, or
+     *      null if there is none.
+     */
+    get_confirmed_session() {
+        return this._zsession || null;
+    }
+
     _send_abort() {
         this._sender( Zmodem.ZMLIB.ABORT_SEQUENCE );
     }
