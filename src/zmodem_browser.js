@@ -2,7 +2,7 @@
 
 var Zmodem = module.exports;
 
-//Make this usable without require.js or what not.
+//TODO: Make this usable without require.js or what not.
 window.Zmodem = Zmodem;
 
 Object.assign(
