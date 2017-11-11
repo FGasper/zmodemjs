@@ -75,11 +75,15 @@ file transfer protocol, which facilitates file transfers via a terminal.
 
 # DEMONSTRATION
 
-* `git clone https://github.com/FGasper/xterm.js`
+There is now an [xterm.js](git clone https://github.com/xtermjs/xterm.js)
+addon that incorporates this library. To see it in action:
+
+* `git clone https://github.com/xtermjs/xterm.js`
 * `cd xterm.js`
-* `git checkout zmodem`
-* `npm install`
-* `npm start`
+* `npm start-zmodem`
+
+You’ll need a CLI tool like [lrzsz](https://ohse.de/uwe/software/lrzsz.html)
+for it to be a meaningful demonstration.
 
 # STATUS
 
