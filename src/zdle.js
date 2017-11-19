@@ -79,11 +79,20 @@ Zmodem.ZDLE = class ZmodemZDLE {
      *  same object that is passed in.
      */
     encode(octets) {
+        //NB: Performance matters here!
+
         if (!this._zdle_table) throw "No ZDLE encode table configured!";
 
         var zdle_table = this._zdle_table;
 
         var last_code = this._lastcode;
+
+        var arrbuf = new ArrayBuffer( 2 * octets.length );
+        var arrbuf_uint8 = new Uint8Array(arrbuf);
+
+        var escctl_yn = this._config.escape_ctrl_chars;
+
+        var arrbuf_i = 0;
 
         for (encode_cur=0; encode_cur<octets.length; encode_cur++) {
 
@@ -97,17 +106,28 @@ Zmodem.ZDLE = class ZmodemZDLE {
 
             last_code = octets[encode_cur];
 
-            if (encode_todo === 1) continue;
+            if (encode_todo === 1) {
+                //Do nothing; we append last_code below.
+            }
 
             //0x40 = '@'; i.e., only escape if the last
             //octet was '@'.
-            if ((encode_todo === 2) || ((last_code & 0x7f) === 0x40)) {
+            else if (escctl_yn || (encode_todo === 2) || ((last_code & 0x7f) === 0x40)) {
+                arrbuf_uint8[arrbuf_i] = ZDLE;
+                arrbuf_i++;
+
                 last_code ^= 0x40;   //0100
-                octets.splice(encode_cur, 1, ZDLE, last_code);
             }
+
+            arrbuf_uint8[arrbuf_i] = last_code;
+
+            arrbuf_i++;
         }
 
         this._lastcode = last_code;
+
+        octets.splice(0);
+        octets.push.apply(octets, new Uint8Array( arrbuf, 0, arrbuf_i ));
 
         return octets;
     }

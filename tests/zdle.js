@@ -26,7 +26,11 @@ tape('round-trip', function(t) {
                 var dec_j = dec.join();
 
                 if (orig_j !== dec_j) {
-                    throw( `Orig: ${orig_j}\nDecd: ${dec_j}` );
+                    console.error("Original", orig.join());
+                    console.error("Encoded", enc.join());
+                    console.error("Decoded", dec.join());
+
+                    throw 'mismatch';
                 }
             }
         },
