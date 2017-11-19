@@ -1,6 +1,6 @@
 {
   "name": "zmodem.js",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "ZMODEM file transfers in JavaScript",
   "devDependencies": {
     "babel-minify-webpack-plugin": "^0.2.0",
