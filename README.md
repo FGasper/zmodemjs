@@ -225,7 +225,7 @@ future feature possibility.)
 
 * It is assumed that no error correction will be needed. All connections
 are assumed to be **“reliable”**; i.e.,
-data is transmitted exactly as intended. We take this for granted today,
+data is received exactly as sent. We take this for granted today,
 but ZMODEM’s original application was over raw modem connections that
 often didn’t have reliable hardware error correction. TCP also wasn’t
 in play to do software error correction as generally happens
