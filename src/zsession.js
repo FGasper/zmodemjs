@@ -289,7 +289,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         var new_header_and_crc = Zmodem.Header.parse(this._input_buffer);
         if (!new_header_and_crc) return;
 
-        //console.log("RECEIVED HEADER", new_header_and_crc[0]);
+        console.log("RECEIVED HEADER", new_header_and_crc[0]);
 
         this._consume_header(new_header_and_crc[0]);
 
@@ -344,6 +344,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         var args = Array.apply( null, arguments );
 
         var bytes_hdr = this._create_header_bytes(args);
+console.info("sending", bytes_hdr[1]);
 
         this._sender(bytes_hdr[0]);
 
@@ -515,6 +516,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         }
 
         var subpacket = Zmodem.Subpacket[parse_func](this._input_buffer);
+//console.log("subpacket", subpacket);
 
         //console.log("RECEIVED SUBPACKET", subpacket);
 
@@ -722,6 +724,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
     _accept(offset) {
         this._accepted_offer = true;
         this._file_offset = offset || 0;
+console.log("accepting");
 
         var sess = this;
 

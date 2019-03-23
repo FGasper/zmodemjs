@@ -29,6 +29,7 @@ function _test_steps(t, sz_args, steps) {
     return helper.exec_lrzsz_steps( t, SZ_PATH, sz_args, steps );
 }
 
+/*
 tape('abort() after ZRQINIT', (t) => {
     return _test_steps( t, [FILE1], [
         (zsession, child) => {
@@ -185,6 +186,78 @@ tape('skip() - after a parse - at end of download', { timeout: 30000 }, (t) => {
         },
     ] );
 });
+*/
+
+tape('single file', { timeout: 30000 }, (t) => {
+console.warn('--------------------------');
+    var filename = helper.make_temp_file(3);
+
+    var started, the_offer;
+
+    var child_pms = _test_steps( t, [ "-v", filename ], [
+        (zsession) => {
+            if (!started) {
+                function offer_taker(offer) {
+console.log("got offer");
+                    the_offer = offer;
+                    the_offer.accept().then( (bytes) => {
+                        var str = String.fromCharCode.apply( String, bytes[0] );
+                        t.ok(
+                            /THE_END$/.test(str),
+                            'file sent'
+                        );
+                    } );
+                }
+                zsession.on("offer", offer_taker);
+                zsession.start();
+                started = true;
+            }
+
+            return the_offer;
+        },
+    ] );
+
+    return child_pms.then( (inputs) => {
+        t.ok(true, "done ==================");
+    } );
+    return Promise.resolve(1);
+});
+
+/*
+tape('single empty file', { timeout: 30000 }, (t) => {
+console.warn('--------------------------');
+    var filename = helper.make_empty_temp_file();
+
+    var started, the_offer;
+
+    var child_pms = _test_steps( t, [ "-vvvvvvvvvvvvv", filename ], [
+        (zsession) => {
+            if (!started) {
+                function offer_taker(offer) {
+console.log("got offer");
+                    the_offer = offer;
+                    the_offer.accept().then( (bytes) => {
+                        var str = String.fromCharCode.apply( String, bytes[0] );
+                        t.equals( str, "", 'empty file transferred' );
+                    } );
+                }
+                zsession.on("offer", offer_taker);
+                zsession.start();
+                started = true;
+            }
+
+            return the_offer;
+        },
+    ] );
+
+    return child_pms.then( (inputs) => {
+        t.ok(true, "done ==================");
+    } );
+    return Promise.resolve(1);
+});
+*/
+
+//----------------------------------------------------------------------
 
 //This doesn’t work because we automatically send ZFIN once we receive it,
 //which prompts the child to finish up.
