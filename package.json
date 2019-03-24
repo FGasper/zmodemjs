@@ -1,6 +1,6 @@
 {
   "name": "zmodem.js",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "ZMODEM file transfers in JavaScript",
   "devDependencies": {
     "babel-minify-webpack-plugin": "^0.2.0",
@@ -36,7 +36,7 @@
     "xmodem",
     "ymodem"
   ],
-  "author": "Gasper Software Consulting, LLC (http://gaspersoftware.com)",
+  "author": "Gasper Software Consulting (http://gaspersoftware.com)",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/FGasper/zmodemjs/issues"

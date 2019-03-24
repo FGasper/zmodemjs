@@ -736,13 +736,23 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
 
                     this._next_header_handler = {
                         ZEOF: function on_ZEOF(hdr) {
+
+                            // Do this first to verify the ZEOF.
+                            // This also fires the “file_end” event.
+                            this._consume_ZEOF(hdr);
+
                             this._next_subpacket_handler = null;
 
+                            // We don’t care about this promise.
+                            // Prior to v0.1.8 we did because we called
+                            // resolve_accept() at the resolution of this
+                            // promise, but that was a bad idea and was
+                            // never documented, so 0.1.8 changed it.
                             this._make_promise_for_between_files();
 
                             resolve_accept();
 
-                            this._consume_ZEOF(hdr)
+                            this._send_ZRINIT();
                         },
                     };
                 },
@@ -831,8 +841,6 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         }
 
         this._on_file_end();
-
-        this._send_ZRINIT();
 
         //Preserve these two so that file_end callbacks
         //will have the right information.
