@@ -158,17 +158,22 @@ tape('skip() - immediately - at end of download', { timeout: 30000 }, (t) => {
     ] );
 });
 
+// Verify a skip() that happens after a transfer is complete.
+// There are no assertions here.
 tape('skip() - after a parse - at end of download', { timeout: 30000 }, (t) => {
     var filenames = [helper.make_temp_file(123)];
 
-    var the_offer, started, skipped;
+    var the_offer, started, skipped, completed;
 
     return _test_steps( t, filenames, [
         (zsession) => {
             if (!started) {
                 function offer_taker(offer) {
                     the_offer = offer;
-                    the_offer.accept();
+                    var promise = the_offer.accept();
+                    promise.then( () => {
+                        completed = 1;
+                    } );
                 }
                 zsession.on("offer", offer_taker);
                 zsession.start();
@@ -178,7 +183,7 @@ tape('skip() - after a parse - at end of download', { timeout: 30000 }, (t) => {
             return the_offer;
         },
         () => {
-            if (!skipped) {
+            if (!skipped && !completed) {
                 the_offer.skip();
                 skipped = true;
             }

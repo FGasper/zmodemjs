@@ -737,10 +737,12 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
                     this._next_header_handler = {
                         ZEOF: function on_ZEOF(hdr) {
                             this._next_subpacket_handler = null;
-                            this._consume_ZEOF(hdr);
 
-                            var next_promise = this._make_promise_for_between_files();
-                            resolve_accept(next_promise);
+                            this._make_promise_for_between_files();
+
+                            resolve_accept();
+
+                            this._consume_ZEOF(hdr)
                         },
                     };
                 },
@@ -756,6 +758,16 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         var ret = this._make_promise_for_between_files();
 
         if (this._accepted_offer) {
+            // There’s a race condition where we might attempt to
+            // skip() an in-progress transfer near its end but actually
+            // the skip() will fire after the transfer is complete.
+            // While there might be ways to prevent this, they likely
+            // would require extra work on the part of implementations.
+            //
+            // It seems far simpler just to make this function a no-op
+            // in these cases.
+            if (!this._current_transfer) return;
+
             //For cancel of an in-progress transfer from lsz,
             //it’s necessary to avoid this buffer overflow bug:
             //
@@ -818,9 +830,9 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
             throw( "ZEOF offset mismatch; unimplemented (local: " + this._file_offset + "; ZEOF: " + header.get_offset() + ")" );
         }
 
-        this._send_ZRINIT();
-
         this._on_file_end();
+
+        this._send_ZRINIT();
 
         //Preserve these two so that file_end callbacks
         //will have the right information.
