@@ -191,6 +191,83 @@ tape('skip() - after a parse - at end of download', { timeout: 30000 }, (t) => {
     ] );
 });
 
+var happy_filenames = [
+    helper.make_temp_file(5),
+    helper.make_temp_file(3),
+    helper.make_temp_file(1),
+    helper.make_empty_temp_file(),
+];
+
+tape('happy-path: single batch', { timeout: 30000 }, (t) => {
+    var started, the_offer;
+
+    var args = happy_filenames;
+
+    var buffers = [];
+
+    var child_pms = _test_steps( t, args, [
+        (zsession) => {
+            if (!started) {
+                function offer_taker(offer) {
+                    the_offer = offer;
+                    the_offer.accept( { on_input: "spool_array" } ).then( (byte_lists) => {
+                        var flat = [].concat.apply([], byte_lists);
+                        var str = String.fromCharCode.apply( String, flat );
+                        buffers.push(str);
+                    } );
+                }
+                zsession.on("offer", offer_taker);
+                zsession.start();
+                started = true;
+            }
+
+            return false;
+        },
+    ] );
+
+    return child_pms.then( (inputs) => {
+        t.equals( buffers[0], "xxxxx=THE_END", '5-byte transfer plus end' );
+        t.equals( buffers[1], "xxx=THE_END", '3-byte transfer plus end' );
+        t.equals( buffers[2], "x=THE_END", '1-byte transfer plus end' );
+        t.equals( buffers[3], "", 'empty transfer plus end' );
+    } );
+});
+
+tape('happy-path: individual transfers', { timeout: 30000 }, (t) => {
+    var promises = happy_filenames.map( (fn) => {
+        var str;
+
+        var started;
+
+        var child_pms = _test_steps( t, [fn], [
+            (zsession) => {
+                if (!started) {
+                    function offer_taker(offer) {
+                        offer.accept( { on_input: "spool_array" } ).then( (byte_lists) => {
+                            var flat = [].concat.apply([], byte_lists);
+                            str = String.fromCharCode.apply( String, flat );
+                        } );
+                    }
+                    zsession.on("offer", offer_taker);
+                    zsession.start();
+                    started = true;
+                }
+
+                return false;
+            },
+        ] );
+
+        return child_pms.then( () => str );
+    } );
+
+    return Promise.all(promises).then( (strs) => {
+        t.equals( strs[0], "xxxxx=THE_END", '5-byte transfer plus end' );
+        t.equals( strs[1], "xxx=THE_END", '3-byte transfer plus end' );
+        t.equals( strs[2], "x=THE_END", '1-byte transfer plus end' );
+        t.equals( strs[3], "", 'empty transfer plus end' );
+    } );
+});
+
 //This doesn’t work because we automatically send ZFIN once we receive it,
 //which prompts the child to finish up.
 tape.skip("abort() after ZEOF", (t) => {

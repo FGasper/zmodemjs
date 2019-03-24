@@ -45,6 +45,16 @@ module.exports = {
         return tmpobj.name;
     },
 
+    make_empty_temp_file() {
+        const fs = require('fs');
+        const tmp = require('tmp');
+
+        var tmpobj = tmp.fileSync();
+        fs.closeSync( tmpobj.fd );
+
+        return tmpobj.name;
+    },
+
     exec_lrzsz_steps(t, binpath, z_args, steps) {
         const spawn = require('child_process').spawn;
 
@@ -64,18 +74,24 @@ module.exports = {
         var inputs = [];
 
         child = spawn(binpath, z_args);
+        console.log("child PID:", child.pid);
+
         child.on("error", console.error.bind(console));
+
+        child.stdin.on("close", () => console.log(`# PID ${child.pid} STDIN closed`));
+        child.stdout.on("close", () => console.log(`# PID ${child.pid} STDOUT closed`));
+        child.stderr.on("close", () => console.log(`# PID ${child.pid} STDERR closed`));
 
         //We can’t just pipe this on through because there can be lone CR
         //bytes which screw up TAP::Harness.
         child.stderr.on("data", (d) => {
-            d = d.toString().replace(/\r/g, "\n");
+            d = d.toString().replace(/\r\n?/g, "\n");
             if (d.substr(-1) !== "\n") d += "\n";
             process.stderr.write(`STDERR: ${d}`);
         });
 
         child.stdout.on("data", (d) => {
-            //console.log("STDOUT from child", d);
+            //console.log(`STDOUT from PID ${child.pid}`, d);
             inputs.push( Array.from(d) );
 
             zsentry.consume( Array.from(d) );
@@ -87,6 +103,7 @@ module.exports = {
                     }
                 }
                 else {
+                    console.log(`End of task list; closing PID ${child.pid}’s STDIN`);
                     child.stdin.end();
                 }
             }
