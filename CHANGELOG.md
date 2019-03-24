@@ -1,7 +1,6 @@
 # 0.1.8
 
-This version introduces a few minor, mostly-under-the-hood changes that
-are worth documenting:
+This version introduces some minor, mostly-under-the-hood changes:
 
 1. `accept()` callbacks now fire after receipt of the ZEOF.
 Previously they didn’t fire until the sender indicated either the next
@@ -11,8 +10,9 @@ behavior more in line with the documentation.
 2. In the same vein, the `file_end` event now fires before ZRINIT is sent.
 
 3. `skip()` is now a no-op if called outside of a transfer. Previously
-it always sent a ZSKIP, which confused `sz` into sending an extra ZFIN,
-which tripped up protocol errors on this side.
+it always sent a ZSKIP, which confused `sz` into sending an extra ZFIN if
+it happened outside of a file transfer, which tripped up protocol errors
+in zmodem.js.
 
 4. A misnamed variable is now fixed.
 
