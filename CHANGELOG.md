@@ -14,6 +14,8 @@ behavior more in line with the documentation.
 it always sent a ZSKIP, which confused `sz` into sending an extra ZFIN,
 which tripped up protocol errors on this side.
 
+4. A misnamed variable is now fixed.
+
 Additionally, a bug in the tests that caused the test runner to skip
 some test files is fixed. Every test now runs, and new tests are added that
 verify the “happy-path” in receive sessions.
