@@ -71,89 +71,119 @@ function _send_batch(t, batch, on_offer) {
     ] );
 }
 
-tape("rz accepts one, then skips next", (t) => {
-    let filename = "no-clobberage";
+function _do_in_temp_dir( todo ) {
+    var ret;
 
-    var batch = [
-        [
-            { name: filename },
-            "the first",
-        ],
-        [
-            { name: filename },
-            "the second",
-        ],
-    ];
+    process.chdir( helper.make_temp_dir() );
 
-    var offers = [];
-    function offer_cb(xfer, batch_item) {
-        offers.push( xfer );
+    try {
+        ret = todo();
+    }
+    catch(e) {
+        throw e;
+    }
+    finally {
+        if (!ret) {
+            process.chdir( dir_before );
+        }
     }
 
-    return _send_batch(t, batch, offer_cb).then( () => {
-        var got_contents = fs.readFileSync(filename, "utf-8");
-        t.equals( got_contents, "the first", 'second offer was rejected' );
+    if (ret) {
+        ret = ret.then( () => process.chdir( dir_before ) );
+    }
 
-        t.notEquals( offers[0], undefined, 'got an offer at first' );
-        t.equals( offers[1], undefined, '… but no offer second' );
+    return ret;
+}
+
+tape("rz accepts one, then skips next", (t) => {
+    return _do_in_temp_dir( () => {
+        let filename = "no-clobberage";
+
+        var batch = [
+            [
+                { name: filename },
+                "the first",
+            ],
+            [
+                { name: filename },
+                "the second",
+            ],
+        ];
+
+        var offers = [];
+        function offer_cb(xfer, batch_item) {
+            offers.push( xfer );
+        }
+
+        return _send_batch(t, batch, offer_cb).then( () => {
+            var got_contents = fs.readFileSync(filename, "utf-8");
+            t.equals( got_contents, "the first", 'second offer was rejected' );
+
+            t.notEquals( offers[0], undefined, 'got an offer at first' );
+            t.equals( offers[1], undefined, '… but no offer second' );
+        } );
     } );
 });
 
 tape("send batch", (t) => {
-    var string_num = 0;
+    return _do_in_temp_dir( () => {
+        var string_num = 0;
 
-    var base = "batch_";
-    var mtime_1990 = new Date("1990-01-01T00:00:00Z");
+        var base = "batch_";
+        var mtime_1990 = new Date("1990-01-01T00:00:00Z");
 
-    var batch = TEST_STRINGS.map( (str, i) => {
-        return [
-            {
-                name: base + i,
-                mtime: mtime_1990,
-            },
-            str,
-        ];
-    } );
+        var batch = TEST_STRINGS.map( (str, i) => {
+            return [
+                {
+                    name: base + i,
+                    mtime: mtime_1990,
+                },
+                str,
+            ];
+        } );
 
-    return _send_batch(t, batch).then( () => {
-        for (var sn=0; sn < TEST_STRINGS.length; sn++) {
-            var got_contents = fs.readFileSync(base + sn, "utf-8");
-            t.equals( got_contents, TEST_STRINGS[sn], `rz wrote out the file: ` + JSON.stringify(TEST_STRINGS[sn]) );
-            t.equals( 0 + fs.statSync(base + sn).mtime, 0 + mtime_1990, `... and observed the sent mtime` );
-        }
+        return _send_batch(t, batch).then( () => {
+            for (var sn=0; sn < TEST_STRINGS.length; sn++) {
+                var got_contents = fs.readFileSync(base + sn, "utf-8");
+                t.equals( got_contents, TEST_STRINGS[sn], `rz wrote out the file: ` + JSON.stringify(TEST_STRINGS[sn]) );
+                t.equals( 0 + fs.statSync(base + sn).mtime, 0 + mtime_1990, `... and observed the sent mtime` );
+            }
+        } );
     } );
 });
 
 tape("send single", (t) => {
-    var xfer;
+    return _do_in_temp_dir( () => {
+        var xfer;
 
-    let test_strings = TEST_STRINGS.slice(0);
+        let test_strings = TEST_STRINGS.slice(0);
 
-    function doer() {
-        var file_contents = test_strings.shift();
-        if (typeof(file_contents) !== "string") return;     //we’re done
+        function doer() {
+            var file_contents = test_strings.shift();
+            if (typeof(file_contents) !== "string") return;     //we’re done
 
-        return helper.exec_lrzsz_steps( t, RZ_PATH, ["--overwrite"], [
-            (zsession, child) => {
-                zsession.send_offer( { name: "single" } ).then( (xf) => {
-                    t.ok( !!xf, 'rz accepted offer' );
-                    xfer = xf;
-                } ).then(
-                    () => xfer.end( Array.from( text_encoder.encode(file_contents) ) )
-                ).then(
-                    () => zsession.close()
-                );
+            return helper.exec_lrzsz_steps( t, RZ_PATH, ["--overwrite"], [
+                (zsession, child) => {
+                    zsession.send_offer( { name: "single" } ).then( (xf) => {
+                        t.ok( !!xf, 'rz accepted offer' );
+                        xfer = xf;
+                    } ).then(
+                        () => xfer.end( Array.from( text_encoder.encode(file_contents) ) )
+                    ).then(
+                        () => zsession.close()
+                    );
 
-                return true;
-            },
-            (zsession, child) => {
-                return zsession.has_ended();
-            },
-        ] ).then( () => {
-            var got_contents = fs.readFileSync("single", "utf-8");
-            t.equals( got_contents, file_contents, `rz wrote out the file: ` + JSON.stringify(file_contents) );
-        } ).then( doer );
-    }
+                    return true;
+                },
+                (zsession, child) => {
+                    return zsession.has_ended();
+                },
+            ] ).then( () => {
+                var got_contents = fs.readFileSync("single", "utf-8");
+                t.equals( got_contents, file_contents, `rz wrote out the file: ` + JSON.stringify(file_contents) );
+            } ).then( doer );
+        }
 
-    return doer();
+        return doer();
+    } );
 });

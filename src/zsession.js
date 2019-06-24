@@ -24,6 +24,8 @@ const
     //pertinent to this module
     KEEPALIVE_INTERVAL = 5000,
 
+    DEBUG = 0,
+
     //We ourselves don’t need ESCCTL, so we don’t send it;
     //however, we always expect to receive it in ZRINIT.
     //See _ensure_receiver_escapes_ctrl_chars() for more details.
@@ -289,7 +291,9 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         var new_header_and_crc = Zmodem.Header.parse(this._input_buffer);
         if (!new_header_and_crc) return;
 
-        //console.log("RECEIVED HEADER", new_header_and_crc[0]);
+        if (DEBUG) {
+            console.debug("RECEIVED HEADER", new_header_and_crc[0]);
+        }
 
         this._consume_header(new_header_and_crc[0]);
 
