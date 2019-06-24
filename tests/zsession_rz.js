@@ -152,7 +152,7 @@ tape("send batch", (t) => {
     } );
 });
 
-tape("send single", (t) => {
+tape("send one at a time", (t) => {
     return _do_in_temp_dir( () => {
         var xfer;
 
@@ -185,5 +185,28 @@ tape("send single", (t) => {
         }
 
         return doer();
+    } );
+});
+
+tape("send single large file", (t) => {
+    return _do_in_temp_dir( () => {
+        var string_num = 0;
+
+        var mtime_1990 = new Date("1990-01-01T00:00:00Z");
+        var big_string = Array(30 * 1024 * 1024).fill('x').join("");
+
+        var batch = [
+            [
+                {
+                    name: "big_kahuna",
+                },
+                big_string,
+            ],
+        ];
+
+        return _send_batch(t, batch).then( () => {
+            var got_contents = fs.readFileSync("big_kahuna", "utf-8");
+            t.equals( got_contents, big_string, 'rz wrote out the file');
+        } );
     } );
 });

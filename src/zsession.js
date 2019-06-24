@@ -349,6 +349,10 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
 
         var bytes_hdr = this._create_header_bytes(args);
 
+        if (DEBUG) {
+            console.log( this.type, "SENDING HEADER", bytes_hdr[1] );
+        }
+
         this._sender(bytes_hdr[0]);
 
         this._last_sent_header = bytes_hdr[1];
@@ -357,8 +361,6 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     _create_header_bytes(name_and_args) {
 
         var hdr = Zmodem.Header.build.apply( Zmodem.Header, name_and_args );
-
-        //console.log( this.type, "SENDING HEADER", hdr );
 
         var formatter = this._get_header_formatter(name_and_args[0]);
 
@@ -1428,6 +1430,10 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         var data_bytes = this._build_subpacket_bytes(data_arr, frameend);
 
         bytes_hdr[0].push.apply( bytes_hdr[0], data_bytes );
+
+        if (DEBUG) {
+            console.log( this.type, "SENDING HEADER", bytes_hdr[1] );
+        }
 
         this._sender( bytes_hdr[0] );
 
