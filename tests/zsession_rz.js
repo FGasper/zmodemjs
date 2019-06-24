@@ -59,7 +59,16 @@ function _send_batch(t, batch, on_offer) {
                     }
 
                     let file_contents = batch.shift()[1];
-                    return xfer && xfer.end( Array.from( text_encoder.encode(file_contents) ) );
+
+                    var octets;
+                    if ("string" === typeof file_contents) {
+                        octets = text_encoder.encode(file_contents);
+                    }
+                    else {
+                        octets = file_contents; // Buffer
+                    }
+
+                    return xfer && xfer.end( Array.from(octets) );
                 } ).then( offer_sender );
             }
 
@@ -207,6 +216,33 @@ tape("send single large file", (t) => {
         return _send_batch(t, batch).then( () => {
             var got_contents = fs.readFileSync("big_kahuna", "utf-8");
             t.equals( got_contents, big_string, 'rz wrote out the file');
+        } );
+    } );
+});
+
+tape.only("send single random file", (t) => {
+    return _do_in_temp_dir( () => {
+        var string_num = 0;
+
+        var mtime_1990 = new Date("1990-01-01T00:00:00Z");
+
+        var big_buffer = new Buffer(1024 * 1024);
+        for (var i=0; i<big_buffer.length; i++) {
+            big_buffer[i] = Math.floor( Math.random(256) );
+        }
+
+        var batch = [
+            [
+                {
+                    name: "big_kahuna",
+                },
+                big_buffer,
+            ],
+        ];
+
+        return _send_batch(t, batch).then( () => {
+            var got_contents = fs.readFileSync("big_kahuna");
+            t.equals( got_contents.join(), big_buffer.join(), 'rz wrote out the file');
         } );
     } );
 });
