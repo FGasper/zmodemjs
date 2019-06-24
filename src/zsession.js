@@ -24,7 +24,7 @@ const
     //pertinent to this module
     KEEPALIVE_INTERVAL = 5000,
 
-    DEBUG = 0,
+    DEBUG = false,
 
     //We ourselves don’t need ESCCTL, so we don’t send it;
     //however, we always expect to receive it in ZRINIT.
