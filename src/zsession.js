@@ -292,7 +292,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         if (!new_header_and_crc) return;
 
         if (DEBUG) {
-            console.debug("RECEIVED HEADER", new_header_and_crc[0]);
+            console.warn(this.type, "RECEIVED HEADER", new_header_and_crc[0]);
         }
 
         this._consume_header(new_header_and_crc[0]);
@@ -350,7 +350,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         var bytes_hdr = this._create_header_bytes(args);
 
         if (DEBUG) {
-            console.log( this.type, "SENDING HEADER", bytes_hdr[1] );
+            console.warn( this.type, "SENDING HEADER", bytes_hdr[1] );
         }
 
         this._sender(bytes_hdr[0]);
@@ -1432,7 +1432,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         bytes_hdr[0].push.apply( bytes_hdr[0], data_bytes );
 
         if (DEBUG) {
-            console.log( this.type, "SENDING HEADER", bytes_hdr[1] );
+            console.warn( this.type, "SENDING HEADER", bytes_hdr[1] );
         }
 
         this._sender( bytes_hdr[0] );

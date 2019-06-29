@@ -125,7 +125,10 @@ stdin.on('data', (chunk) => {
         if (zsession) {
             _debug("Got session.");
 
-            zsession.consume(octets);
+            // It seems like .parse() should strip out the header bytes,
+            // but that’s not how it works.
+            // zsession.consume(octets);
+
             zsession.set_sender( (octets) => process.stdout.write( Buffer.from(octets) ) );
 
             send_files(zsession, paths).then( () => zsession.close() );
