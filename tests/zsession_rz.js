@@ -220,7 +220,7 @@ tape("send single large file", (t) => {
     } );
 });
 
-tape.only("send single random file", (t) => {
+tape("send single random file", (t) => {
     return _do_in_temp_dir( () => {
         var string_num = 0;
 
