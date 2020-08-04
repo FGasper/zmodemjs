@@ -24,7 +24,7 @@ const
     //pertinent to this module
     KEEPALIVE_INTERVAL = 5000,
 
-    DEBUG = false,
+    DEBUG = true,
 
     //We ourselves don’t need ESCCTL, so we don’t send it;
     //however, we always expect to receive it in ZRINIT.
@@ -306,7 +306,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
     _consume_header(new_header) {
         this._on_receive(new_header);
 
-        var handler = this._next_header_handler[ new_header.NAME ];
+        var handler = this._next_header_handler && this._next_header_handler[ new_header.NAME ];
         if (!handler) {
             console.error("Unhandled header!", new_header, this._next_header_handler);
             throw new Zmodem.Error( "Unhandled header: " + new_header.NAME );

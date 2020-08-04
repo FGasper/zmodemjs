@@ -74,6 +74,29 @@ function _init(async) {
     receiver.set_sender(receiver_sender);
 }
 
+test('Sender receives extra ZRPOS', (t) => {
+    _init();
+
+    var zrinit = Zmodem.Header.build("ZRINIT", ["CANFDX", "CANOVIO", "ESCCTL"]);
+    var mysender = new Zmodem.Session.Send(zrinit);
+
+    var zrpos = Zmodem.Header.build("ZRPOS", 12345);
+
+    var err;
+
+    try {
+        mysender.consume(zrpos.to_hex());
+    }
+    catch(e) {
+        err = e;
+    }
+
+    t.match(err.toString(), /header/, "error as expected");
+    t.match(err.toString(), /ZRPOS/, "error as expected");
+
+    return Promise.resolve();
+} );
+
 test('Offer events', (t) => {
     _init();
 

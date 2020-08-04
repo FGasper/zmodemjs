@@ -1,3 +1,9 @@
+# 0.1.10
+
+Make unrecognized-header detection more resilient.
+
+---
+
 # 0.1.9
 
 No production changes; this just disables a flapping test.
