@@ -292,7 +292,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         if (!new_header_and_crc) return;
 
         if (DEBUG) {
-            console.warn(this.type, "RECEIVED HEADER", new_header_and_crc[0]);
+            console.debug(this.type, "RECEIVED HEADER", new_header_and_crc[0]);
         }
 
         this._consume_header(new_header_and_crc[0]);
@@ -350,7 +350,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         var bytes_hdr = this._create_header_bytes(args);
 
         if (DEBUG) {
-            console.warn( this.type, "SENDING HEADER", bytes_hdr[1] );
+            console.debug( this.type, "SENDING HEADER", bytes_hdr[1] );
         }
 
         this._sender(bytes_hdr[0]);
@@ -522,9 +522,11 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
 
         var subpacket = Zmodem.Subpacket[parse_func](this._input_buffer);
 
-        //console.log("RECEIVED SUBPACKET", subpacket);
-
         if (subpacket) {
+            if (DEBUG) {
+                console.debug(this.type, "RECEIVED SUBPACKET", subpacket);
+            }
+
             this._consume_data(subpacket);
 
             //What state are we in if the subpacket indicates frame end
@@ -1375,6 +1377,10 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
      * undefined.
      */
     send_offer(params) {
+        if (DEBUG) {
+            console.debug("SENDING OFFER", params);
+        }
+
         if (!params) throw "need file params!";
 
         if (this._sending_file) throw "Already sending file!";
@@ -1432,7 +1438,8 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         bytes_hdr[0].push.apply( bytes_hdr[0], data_bytes );
 
         if (DEBUG) {
-            console.warn( this.type, "SENDING HEADER", bytes_hdr[1] );
+            console.debug( this.type, "SENDING HEADER", bytes_hdr[1] );
+            console.debug( this.type, "-- HEADER PAYLOAD:", frameend, data_bytes.length );
         }
 
         this._sender( bytes_hdr[0] );
