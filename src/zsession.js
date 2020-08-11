@@ -1395,6 +1395,25 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
 
         var sess = this;
 
+        function zrpos_handler_setter_func() {
+            sess._next_header_handler = {
+
+                // In some cases the receiver will send a ZRPOS if it
+                // doesn’t receive a subpacket within a certain length
+                // of time. Since zmodem.js requires a reliable transmission
+                // medium we can assume that that’s just congestion, and
+                // anything the receiver asks for is already on its way.
+                // Thus, we can ignore ZRPOS during the transfer.
+                //
+                ZRPOS: function(hdr) {
+                    if (DEBUG) {
+                        this._log_header( "GOT MID-TRANSFER ZRPOS", hdr );
+                    }
+                    zrpos_handler_setter_func();
+                },
+            };
+        };
+
         var doer_func = function() {
 
             //return Promise object that is fulfilled when the ZRPOS or ZSKIP arrives.
@@ -1408,6 +1427,9 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
                     },
                     ZRPOS: function(hdr) {
                         sess._sending_file = true;
+
+                        zrpos_handler_setter_func();
+
                         res(
                             new Transfer(
                                 params,
