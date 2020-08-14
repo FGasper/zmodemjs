@@ -8,6 +8,8 @@ var Zmodem = module.exports;
  * as little edge cases crop up.
  */
 
+Zmodem.DEBUG = false;
+
 Object.assign(
     Zmodem,
     require("./encode"),
@@ -23,8 +25,6 @@ Object.assign(
 const
     //pertinent to this module
     KEEPALIVE_INTERVAL = 5000,
-
-    DEBUG = true,
 
     //We ourselves don’t need ESCCTL, so we don’t send it;
     //however, we always expect to receive it in ZRINIT.
@@ -291,7 +291,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
         var new_header_and_crc = Zmodem.Header.parse(this._input_buffer);
         if (!new_header_and_crc) return;
 
-        if (DEBUG) {
+        if (Zmodem.DEBUG) {
             this._log_header( "RECEIVED HEADER", new_header_and_crc[0] );
         }
 
@@ -353,7 +353,7 @@ Zmodem.Session = class ZmodemSession extends _Eventer {
 
         var bytes_hdr = this._create_header_bytes(args);
 
-        if (DEBUG) {
+        if (Zmodem.DEBUG) {
             this._log_header( "SENDING HEADER", bytes_hdr[1] );
         }
 
@@ -527,7 +527,7 @@ Zmodem.Session.Receive = class ZmodemReceiveSession extends Zmodem.Session {
         var subpacket = Zmodem.Subpacket[parse_func](this._input_buffer);
 
         if (subpacket) {
-            if (DEBUG) {
+            if (Zmodem.DEBUG) {
                 console.debug(this.type, "RECEIVED SUBPACKET", subpacket);
             }
 
@@ -1381,7 +1381,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
      * undefined.
      */
     send_offer(params) {
-        if (DEBUG) {
+        if (Zmodem.DEBUG) {
             console.debug("SENDING OFFER", params);
         }
 
@@ -1398,17 +1398,27 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
         function zrpos_handler_setter_func() {
             sess._next_header_handler = {
 
-                // In some cases the receiver will send a ZRPOS if it
-                // doesn’t receive a subpacket within a certain length
-                // of time. Since zmodem.js requires a reliable transmission
-                // medium we can assume that that’s just congestion, and
-                // anything the receiver asks for is already on its way.
-                // Thus, we can ignore ZRPOS during the transfer.
+                // The receiver may send ZRPOS in at least two cases:
+                //
+                // 1) A malformed subpacket arrived, so we need to
+                // “rewind” a bit and continue from the receiver’s
+                // last-successful location in the file.
+                //
+                // 2) The receiver hasn’t gotten any data for a bit,
+                // so it sends ZRPOS as a “ping”.
+                //
+                // Case #1 shouldn’t happen since zmodem.js requires a
+                // reliable transport. Case #2, though, can happen due
+                // to either normal network congestion or errors in
+                // implementation. In either case, there’s nothing for
+                // us to do but to ignore the ZRPOS, with an optional
+                // warning.
                 //
                 ZRPOS: function(hdr) {
-                    if (DEBUG) {
-                        this._log_header( "GOT MID-TRANSFER ZRPOS", hdr );
+                    if (Zmodem.DEBUG) {
+                        console.warn("Mid-transfer ZRPOS … implementation error?");
                     }
+
                     zrpos_handler_setter_func();
                 },
             };
@@ -1463,7 +1473,7 @@ Zmodem.Session.Send = class ZmodemSendSession extends Zmodem.Session {
 
         bytes_hdr[0].push.apply( bytes_hdr[0], data_bytes );
 
-        if (DEBUG) {
+        if (Zmodem.DEBUG) {
             this._log_header( "SENDING HEADER", bytes_hdr[1] );
             console.debug( this.type, "-- HEADER PAYLOAD:", frameend, data_bytes.length );
         }
