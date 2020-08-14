@@ -73,22 +73,10 @@ piece of the above; one potential implementation might look like:
 zmodem.js is a JavaScript implementation of the ZMODEM
 file transfer protocol, which facilitates file transfers via a terminal.
 
-# DEMONSTRATION
-
-There is now an [xterm.js](git clone https://github.com/xtermjs/xterm.js)
-addon that incorporates this library. To see it in action:
-
-* `git clone https://github.com/xtermjs/xterm.js`
-* `cd xterm.js`
-* `npm start-zmodem`
-
-You’ll need a CLI tool like [lrzsz](https://ohse.de/uwe/software/lrzsz.html)
-for it to be a meaningful demonstration.
-
 # STATUS
 
-This library is ALPHA quality. Bugs are not unlikely; also, interfaces
-may change from time to time.
+This library is BETA quality. It should be safe for general use, but
+breaking changes may still happen.
 
 # HOW TO USE THIS LIBRARY
 
@@ -254,8 +242,11 @@ ZMODEM header. So don’t do that. :-P
 
 # IMPLEMENTATION NOTES
 
-* I’ve had success integrating zmodem.js with
-[xterm.js](https://xtermjs.org).
+* I initially had success integrating zmodem.js with
+[xterm.js](https://xtermjs.org); however, that library’s plugin interface
+changed dramatically, and I haven’t created a new plugin to replace the
+old one. (It should be relatively straightforward if someone else wants to
+pick it up.)
 
 * Browsers don’t have an easy way to download only part of a file;
 as a result, anything the browser saves to disk must be the entire file.
@@ -277,9 +268,9 @@ explains the unsightly `**B0000…` stuff that you’ll see when you run
 either `rz` or `sz`.
 
     That header
-    will include some form of line break; from `lrzsz` that means bytes 0x0d
-    and 0x8a (not 0x0a). Your terminal might react oddly to that; if it does,
-    try stripping out one or the other line ending character.
+    will include some form of line break. (From `lrzsz` means bytes 0x0d
+    and 0x8a—**not** 0x0a). Your terminal might react oddly to that;
+    if it does, try stripping out one or the other line ending character.
 
 # PROTOCOL CHOICE
 
@@ -380,6 +371,29 @@ the documentation will build in a newly-created `documentation` directory.
 Contributions are welcome via
 [https://github.com/FGasper/zmodemjs](https://github.com/FGasper/zmodemjs).
 
+# TROUBLESHOOTING
+
+Before you do anything else, set `Zmodem.DEBUG` to true. This will log
+useful information about the ZMODEM session to your JavaScript console. That
+may give you all you need to fix your problem.
+
+If you have trouble transferring files, try these diagnostics:
+
+1. Transfer an empty file. (Run `touch empty.bin` to create one named `empty.bin`.)
+
+2. Transfer a small file. (`echo hello > small.txt`)
+
+3. Transfer a file that contains all possible octets. (`perl -e 'print chr for 0 .. 255' > all_bytes.bin`)
+
+4. If a specific file fails, does it still fail if you `truncate` a copy of
+the file down to, say, half size and transfer that truncated file? Does it
+work if you truncate the file down to 1 byte? If so, then use this method
+to determine which specific place in the file triggers the transfer error.
+
+**IF YOU HAVE DONE THE ABOVE** and still think the problem is with zmodem.js,
+you can file a bug report. Note that, historically, most bug reports have
+reflected implementation errors rather than bugs in zmodem.js.
+
 # TODO
 
 * Teach send sessions to “fast-forward” so as to honor requests for
@@ -389,8 +403,9 @@ append-style sessions.
 
 * Teach Session how to do and to handle pre-CRC checks.
 
-* Possible: command-line tool, if there’s demand for it, e.g., in
-environments where lrzsz can’t run.
+* Possible: command-line `rz`, if there’s demand for it, e.g., in
+environments where `lrzsz` can’t run. (NB: The distribution includes
+a bare-bones, proof-of-concept `sz` replacement.)
 
 # KNOWN ISSUERS
 

@@ -2,6 +2,17 @@
 
 Make unrecognized-header detection more resilient.
 
+Ignore extra ZRPOS if received while sending a file. (See comments
+for the rationale.)
+
+Expose Zmodem.DEBUG for runtime adjustment.
+
+Add a proof-of-concept CLI “sz” implementation to the distribution.
+
+Change quality designation from ALPHA to BETA.
+
+Documentation updates, including addition of a TROUBLESHOOTING section.
+
 ---
 
 # 0.1.9
