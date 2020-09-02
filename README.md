@@ -368,8 +368,8 @@ the documentation will build in a newly-created `documentation` directory.
 
 # CONTRIBUTING
 
-Contributions are welcome via
-[https://github.com/FGasper/zmodemjs](https://github.com/FGasper/zmodemjs).
+Submit pull requests via
+[GitHub](https://github.com/FGasper/zmodemjs/pulls).
 
 # TROUBLESHOOTING
 
@@ -407,11 +407,24 @@ append-style sessions.
 environments where `lrzsz` can’t run. (NB: The distribution includes
 a bare-bones, proof-of-concept `sz` replacement.)
 
-# KNOWN ISSUERS
+# KNOWN ISSUES
 
 * In testing, Microsoft Edge appeared not to care what string was given
 to `<a>`’s `download` attribute; the saved filename was based on the
 browser’s internal Blob object URL instead.
+
+# USERS
+
+The following are projects I’m aware of that use this library:
+
+* [electerm](https://github.com/electerm/electerm)
+
+* [ttyd](https://github.com/tsl0922/ttyd)
+
+* [gowebssh](https://github.com/leffss/gowebssh)
+
+[Send a pull request](https://github.com/FGasper/zmodemjs/pulls)
+if you’d like your project listed.
 
 # COPYRIGHT
 
