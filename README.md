@@ -394,7 +394,7 @@ to determine which specific place in the file triggers the transfer error.
 you can file a bug report. Note that, historically, most bug reports have
 reflected implementation errors rather than bugs in zmodem.js.
 
-If you just want help using zmodem.js, try (Gitter)[https://gitter.im/zmodemjs/community].
+If you just want help using zmodem.js, try [Gitter](https://gitter.im/zmodemjs/community).
 
 # TODO
 
